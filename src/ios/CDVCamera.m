@@ -29,6 +29,7 @@
 #import <ImageIO/CGImageDestination.h>
 #import <MobileCoreServices/UTCoreTypes.h>
 #import <objc/message.h>
+@import Photos;
 
 #ifndef __CORDOVA_4_0_0
     #import <Cordova/NSData+Base64.h>
@@ -99,6 +100,8 @@ static NSString* toBase64(NSData* data) {
 
 @implementation CDVCamera
 
+@synthesize callbackId;
+
 + (void)initialize
 {
     org_apache_cordova_validArrowDirections = [[NSSet alloc] initWithObjects:[NSNumber numberWithInt:UIPopoverArrowDirectionUp], [NSNumber numberWithInt:UIPopoverArrowDirectionDown], [NSNumber numberWithInt:UIPopoverArrowDirectionLeft], [NSNumber numberWithInt:UIPopoverArrowDirectionRight], [NSNumber numberWithInt:UIPopoverArrowDirectionAny], nil];
@@ -141,6 +144,8 @@ static NSString* toBase64(NSData* data) {
     self.hasPendingOperation = YES;
     
     __weak CDVCamera* weakSelf = self;
+    
+    self.callbackId = command.callbackId;
 
     [self.commandDelegate runInBackground:^{
         
@@ -422,12 +427,91 @@ static NSString* toBase64(NSData* data) {
     return (scaledImage == nil ? image : scaledImage);
 }
 
-- (CDVPluginResult*)resultForImage:(CDVPictureOptions*)options info:(NSDictionary*)info
+- (void)resultForImage:(CDVPictureOptions*)options info:(NSDictionary*)info {
+    __block CDVPluginResult* result = nil;
+    UIImage* image = [self retrieveImage:info options:options];
+    NSData* data = [self processImage:image info:info options:options];
+    NSString* filePath;
+    NSString* extension;
+    if (data) {
+        NSError* err = nil;
+        extension = options.encodingType == EncodingTypePNG? @"png" : @"jpg";
+        filePath = [self tempFilePath:extension];
+        // save file
+        if (![data writeToFile:filePath options:NSAtomicWrite error:&err]) {
+            result = [CDVPluginResult resultWithStatus:CDVCommandStatus_IO_EXCEPTION messageAsString:[err localizedDescription]];
+        }
+    }
+    
+    if ([PHObject class]) {
+        __block PHAssetChangeRequest *assetRequest;
+        __block PHObjectPlaceholder *placeholder;
+        __block PHFetchOptions *fetchOptions;
+        // Save to the album
+        [[PHPhotoLibrary sharedPhotoLibrary] performChanges:^{
+            PHAssetCollection *collection = [PHAssetCollection fetchAssetCollectionsWithType:PHAssetCollectionTypeAlbum
+                                                                                     subtype:PHAssetCollectionSubtypeAny
+                                                                                     options:fetchOptions].firstObject;
+            
+            assetRequest = [PHAssetChangeRequest creationRequestForAssetFromImageAtFileURL:[NSURL fileURLWithPath:filePath]];
+            placeholder = [assetRequest placeholderForCreatedAsset];
+            fetchOptions = [[PHFetchOptions alloc] init];
+            
+            PHFetchResult *photosAsset = [PHAsset fetchAssetsInAssetCollection:collection options:nil];
+            PHAssetCollectionChangeRequest *albumChangeRequest = [PHAssetCollectionChangeRequest changeRequestForAssetCollection:collection
+                                                                                                                          assets:photosAsset];
+            [albumChangeRequest addAssets:@[placeholder]];
+        } completionHandler:^(BOOL success, NSError *error) {
+            if (success) {
+                NSString *localIdentifier = placeholder.localIdentifier;
+                NSString *fileString = [[NSURL fileURLWithPath:filePath] absoluteString];
+                result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary: [NSDictionary dictionaryWithObjectsAndKeys: localIdentifier, @"preSelectedAsset", fileString, @"image", nil]];
+                [self sendResult: result];
+            }
+            else {
+                NSLog(@"%@", error);
+            }
+        }];
+    } else {
+        NSString *fileString = [[NSURL fileURLWithPath:filePath] absoluteString];
+        ALAssetsLibrary* library =  [[ALAssetsLibrary alloc] init];
+        [library writeImageToSavedPhotosAlbum:image.CGImage
+                                  orientation:(ALAssetOrientation)(image.imageOrientation)
+                              completionBlock:^(NSURL *assetUrl, NSError *error) {
+                                  if(error) {
+                                      NSLog(@"%@", error);
+                                  } else {
+                                      [library assetForURL:assetUrl
+                                                    resultBlock:^(ALAsset *asset) {
+                                                        // assign the photo to the album
+                                                        NSLog(@"Asset %@", [asset valueForProperty:ALAssetPropertyAssetURL]);
+                                                    }
+                                                   failureBlock:^(NSError* error) {
+                                                       NSLog(@"failed to retrieve image asset:\nError: %@ ", [error localizedDescription]);
+                                                   }];
+                                      NSString *preSelectedAsset = [assetUrl absoluteString];
+                                      result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary: [NSDictionary dictionaryWithObjectsAndKeys: preSelectedAsset, @"preSelectedAsset", fileString, @"image", nil]];
+                                      [self sendResult: result];
+                                  }
+                              }];
+        
+    }
+
+}
+
+- (CDVPluginResult*)resultForImageWithResult:(CDVPictureOptions*)options info:(NSDictionary*)info
 {
     CDVPluginResult* result = nil;
     BOOL saveToPhotoAlbum = options.saveToPhotoAlbum;
     UIImage* image = nil;
-
+    NSString* extension;
+    NSString* filePath;
+    
+    __block NSString *preSelectedAsset = [[NSString alloc] init];
+    __block NSString *fileString = [[NSString alloc] init];
+    
+    // We will never use any other options so just hard code DestinationTypeFileUri
+    options.destinationType = DestinationTypeFileUri;
     switch (options.destinationType) {
         case DestinationTypeNativeUri:
         {
@@ -443,15 +527,17 @@ static NSString* toBase64(NSData* data) {
             NSData* data = [self processImage:image info:info options:options];
             if (data) {
                 
-                NSString* extension = options.encodingType == EncodingTypePNG? @"png" : @"jpg";
-                NSString* filePath = [self tempFilePath:extension];
+                
                 NSError* err = nil;
+                
+                extension = options.encodingType == EncodingTypePNG? @"png" : @"jpg";
+                filePath = [self tempFilePath:extension];
                 
                 // save file
                 if (![data writeToFile:filePath options:NSAtomicWrite error:&err]) {
                     result = [CDVPluginResult resultWithStatus:CDVCommandStatus_IO_EXCEPTION messageAsString:[err localizedDescription]];
                 } else {
-                    result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[[self urlTransformer:[NSURL fileURLWithPath:filePath]] absoluteString]];
+//                    result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[[self urlTransformer:[NSURL fileURLWithPath:filePath]] absoluteString]];
                 }
             }
         }
@@ -470,9 +556,68 @@ static NSString* toBase64(NSData* data) {
             break;
     };
     
+    dispatch_semaphore_t sema = dispatch_semaphore_create(0);
+    
     if (saveToPhotoAlbum && image) {
-        ALAssetsLibrary* library = [ALAssetsLibrary new];
-        [library writeImageToSavedPhotosAlbum:image.CGImage orientation:(ALAssetOrientation)(image.imageOrientation) completionBlock:nil];
+         if ([PHObject class]) {
+            __block PHAssetChangeRequest *assetRequest;
+            __block PHObjectPlaceholder *placeholder;
+            __block PHFetchOptions *fetchOptions;
+            // Save to the album
+            [[PHPhotoLibrary sharedPhotoLibrary] performChanges:^{
+                PHAssetCollection *collection = [PHAssetCollection fetchAssetCollectionsWithType:PHAssetCollectionTypeAlbum
+                                                                       subtype:PHAssetCollectionSubtypeAny
+                                                                       options:fetchOptions].firstObject;
+                
+                assetRequest = [PHAssetChangeRequest creationRequestForAssetFromImageAtFileURL:[NSURL fileURLWithPath:filePath]];
+                placeholder = [assetRequest placeholderForCreatedAsset];
+                fetchOptions = [[PHFetchOptions alloc] init];
+                
+                PHFetchResult *photosAsset = [PHAsset fetchAssetsInAssetCollection:collection options:nil];
+                PHAssetCollectionChangeRequest *albumChangeRequest = [PHAssetCollectionChangeRequest changeRequestForAssetCollection:collection
+                                                                                                                               assets:photosAsset];
+                [albumChangeRequest addAssets:@[placeholder]];
+                } completionHandler:^(BOOL success, NSError *error) {
+                 if (success) {
+                     NSString *localIdentifier = placeholder.localIdentifier;
+                     NSLog(@"%@", localIdentifier);
+                     fileString = [[NSURL fileURLWithPath:filePath] absoluteString];
+                     preSelectedAsset = localIdentifier;
+                     dispatch_semaphore_signal(sema);
+                 }
+                 else {
+                     NSLog(@"%@", error);
+                     dispatch_semaphore_signal(sema);
+                 }
+             }];
+         } else {
+             fileString = [[NSURL fileURLWithPath:filePath] absoluteString];
+//             dispatch_semaphore_signal(sema);
+             ALAssetsLibrary* library = [ALAssetsLibrary new];
+//             [library writeImageToSavedPhotosAlbum:image.CGImage
+//                                                     orientation:(ALAssetOrientation)(image.imageOrientation)
+//                                   completionBlock:nil];
+             [library writeImageToSavedPhotosAlbum:image.CGImage
+                                       orientation:(ALAssetOrientation)(image.imageOrientation)
+                                   completionBlock:^(NSURL *assetUrl, NSError *error) {
+                if(error) {
+                    NSLog(@"SCATTO: Salvataggio in library: ERRORE");
+                } else {
+                    preSelectedAsset = [assetUrl absoluteString];
+                }
+//                dispatch_semaphore_signal(sema);
+             }];
+
+            
+         }
+    }
+    
+//    NSLog(@"dispatch count: %lu", dispatch_semaphore_wait(sema, DISPATCH_TIME_FOREVER));
+    
+    if(result == nil) {
+        NSLog(@"preSelectedAsset: %@", preSelectedAsset);
+        NSLog(@"fileString: %@", fileString);
+        result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary: [NSDictionary dictionaryWithObjectsAndKeys: preSelectedAsset, @"preSelectedAsset", fileString, @"image", nil]];
     }
     
     return result;
@@ -484,27 +629,33 @@ static NSString* toBase64(NSData* data) {
     return [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:moviePath];
 }
 
+- (void)sendResult:(CDVPluginResult*) result {
+    __weak CDVCamera* weakSelf = self;
+    if (result) {
+        [weakSelf.commandDelegate sendPluginResult:result callbackId:self.callbackId];
+        weakSelf.hasPendingOperation = NO;
+        weakSelf.pickerController = nil;
+    }
+}
+
 - (void)imagePickerController:(UIImagePickerController*)picker didFinishPickingMediaWithInfo:(NSDictionary*)info
 {
     __weak CDVCameraPicker* cameraPicker = (CDVCameraPicker*)picker;
-    __weak CDVCamera* weakSelf = self;
-    
+//    __weak CDVCamera* weakSelf = self;
     dispatch_block_t invoke = ^(void) {
-        __block CDVPluginResult* result = nil;
+//        __block CDVPluginResult* result = nil;
         
         NSString* mediaType = [info objectForKey:UIImagePickerControllerMediaType];
         if ([mediaType isEqualToString:(NSString*)kUTTypeImage]) {
-            result = [self resultForImage:cameraPicker.pictureOptions info:info];
+//            result = [self resultForImage:cameraPicker.pictureOptions info:info];
+            [self resultForImage:cameraPicker.pictureOptions info:info];
         }
         else {
-            result = [self resultForVideo:info];
+//            result = [self resultForVideo:info];
+            [self resultForVideo:info];
         }
         
-        if (result) {
-            [weakSelf.commandDelegate sendPluginResult:result callbackId:cameraPicker.callbackId];
-            weakSelf.hasPendingOperation = NO;
-            weakSelf.pickerController = nil;
-        }
+        
     };
     
     if (cameraPicker.pictureOptions.popoverSupported && (cameraPicker.pickerPopoverController != nil)) {

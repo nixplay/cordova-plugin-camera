@@ -36,6 +36,7 @@ import org.apache.cordova.LOG;
 import org.apache.cordova.PluginResult;
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
@@ -442,8 +443,15 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
             if (this.targetHeight == -1 && this.targetWidth == -1 && this.mQuality == 100 &&
                     !this.correctOrientation) {
                 writeUncompressedImage(uri);
+                JSONObject res = new JSONObject();
+                try {
+                    res.put("image", uri.toString());
+                    res.put("preSelectedAsset", uri.toString().replaceAll("file://", ""));
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
 
-                this.callbackContext.success(uri.toString());
+                this.callbackContext.success(res);
             } else {
                 if(croppedUri != null) {
                     bitmap = getScaledBitmap(FileHelper.stripFileProtocol(croppedUri.toString()));
@@ -478,10 +486,16 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
                 if(this.saveToPhotoAlbum) {
                     refreshGallery(uri);
                 }
-
+                JSONObject res = new JSONObject();
+                try {
+                    res.put("image", uri.toString());
+                    res.put("preSelectedAsset", uri.toString().replaceAll("file://", ""));
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
 
                 // Send Uri back to JavaScript for viewing image
-                this.callbackContext.success(uri.toString());
+                this.callbackContext.success(res);
 
             }
         } else {
