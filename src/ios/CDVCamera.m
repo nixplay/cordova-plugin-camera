@@ -446,21 +446,10 @@ static NSString* toBase64(NSData* data) {
     if ([PHObject class]) {
         __block PHAssetChangeRequest *assetRequest;
         __block PHObjectPlaceholder *placeholder;
-        __block PHFetchOptions *fetchOptions;
         // Save to the album
         [[PHPhotoLibrary sharedPhotoLibrary] performChanges:^{
-            PHAssetCollection *collection = [PHAssetCollection fetchAssetCollectionsWithType:PHAssetCollectionTypeAlbum
-                                                                                     subtype:PHAssetCollectionSubtypeAny
-                                                                                     options:fetchOptions].firstObject;
-            
             assetRequest = [PHAssetChangeRequest creationRequestForAssetFromImageAtFileURL:[NSURL fileURLWithPath:filePath]];
             placeholder = [assetRequest placeholderForCreatedAsset];
-            fetchOptions = [[PHFetchOptions alloc] init];
-            
-            PHFetchResult *photosAsset = [PHAsset fetchAssetsInAssetCollection:collection options:nil];
-            PHAssetCollectionChangeRequest *albumChangeRequest = [PHAssetCollectionChangeRequest changeRequestForAssetCollection:collection
-                                                                                                                          assets:photosAsset];
-            [albumChangeRequest addAssets:@[placeholder]];
         } completionHandler:^(BOOL success, NSError *error) {
             if (success) {
                 NSString *localIdentifier = placeholder.localIdentifier;
