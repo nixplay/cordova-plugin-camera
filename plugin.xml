@@ -150,7 +150,7 @@
          <framework src="AVFoundation.framework" />
 
          <config-file target="*-Info.plist" parent="NSLocationWhenInUseUsageDescription">
-             <string></string>
+             <string>${PROJECT_NAME} uses location</string>
          </config-file>
 
      </platform>
