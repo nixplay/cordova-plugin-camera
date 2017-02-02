@@ -19,7 +19,9 @@
 package org.apache.cordova.camera;
 
 import java.io.IOException;
+import java.util.Date;
 
+import android.location.Location;
 import android.media.ExifInterface;
 
 public class ExifHelper {
@@ -182,4 +184,51 @@ public class ExifHelper {
     public void resetOrientation() {
         this.orientation = "" + ExifInterface.ORIENTATION_NORMAL;
     }
+
+    public void setGeoTag(Location loc){
+
+        this.gpsLatitude = dec2DMS(loc.getLatitude());
+        this.gpsLongitude = dec2DMS(loc.getLongitude());
+
+        if (loc.getLatitude() > 0)
+            this.gpsLatitudeRef = "N";
+        else
+            this.gpsLatitudeRef = "S";
+        if (loc.getLongitude() > 0)
+            this.gpsLongitudeRef = "E";
+        else
+            this.gpsLongitudeRef = "W";
+
+    }
+
+    // http://stackoverflow.com/questions/10531544/write-geotag-jpegs-exif-data-in-android
+    public void loc2Exif(String flNm, Location loc) {
+        try {
+            ExifInterface ef = new ExifInterface(flNm);
+            ef.setAttribute(ExifInterface.TAG_GPS_LATITUDE, dec2DMS(loc.getLatitude()));
+            ef.setAttribute(ExifInterface.TAG_GPS_LONGITUDE, dec2DMS(loc.getLongitude()));
+            if (loc.getLatitude() > 0)
+                ef.setAttribute(ExifInterface.TAG_GPS_LATITUDE_REF, "N");
+            else
+                ef.setAttribute(ExifInterface.TAG_GPS_LATITUDE_REF, "S");
+            if (loc.getLongitude() > 0)
+                ef.setAttribute(ExifInterface.TAG_GPS_LONGITUDE_REF, "E");
+            else
+                ef.setAttribute(ExifInterface.TAG_GPS_LONGITUDE_REF, "W");
+            ef.saveAttributes();
+        } catch (IOException e) {
+        }
+    }
+    //-----------------------------------------------------------------------------------
+
+    String dec2DMS(double coord) {
+        coord = coord > 0 ? coord : -coord;  // -105.9876543 -> 105.9876543
+        String sOut = Integer.toString((int) coord) + "/1,";   // 105/1,
+        coord = (coord % 1) * 60;         // .987654321 * 60 = 59.259258
+        sOut = sOut + Integer.toString((int) coord) + "/1,";   // 105/1,59/1,
+        coord = (coord % 1) * 60000;             // .259258 * 60000 = 15555
+        sOut = sOut + Integer.toString((int) coord) + "/1000";   // 105/1,59/1,15555/1000
+        return sOut;
+    }
+
 }
