@@ -449,19 +449,23 @@ static NSString* toBase64(NSData* data) {
             __block PHAssetChangeRequest *assetRequest;
             __block PHObjectPlaceholder *placeholder;
             // Save to the album
-            [[PHPhotoLibrary sharedPhotoLibrary] performChanges:^{
-                assetRequest = [PHAssetChangeRequest creationRequestForAssetFromImageAtFileURL:[NSURL fileURLWithPath:filePath]];
-                placeholder = [assetRequest placeholderForCreatedAsset];
-            } completionHandler:^(BOOL success, NSError *error) {
-                if (success) {
-                    NSString *localIdentifier = placeholder.localIdentifier;
-                    NSString *fileString = [[NSURL fileURLWithPath:filePath] absoluteString];
-                    result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary: [NSDictionary dictionaryWithObjectsAndKeys: localIdentifier, @"preSelectedAsset", fileString, @"image", nil]];
-                    [self sendResult: result];
-                }
-                else {
-                    NSLog(@"%@", error);
-                }
+            [PHPhotoLibrary requestAuthorization:^(PHAuthorizationStatus status) {
+                [[PHPhotoLibrary sharedPhotoLibrary] performChanges:^{
+                    assetRequest = [PHAssetChangeRequest creationRequestForAssetFromImageAtFileURL:[NSURL fileURLWithPath:filePath]];
+                    placeholder = [assetRequest placeholderForCreatedAsset];
+                } completionHandler:^(BOOL success, NSError *error) {
+                    if (success) {
+                        NSString *localIdentifier = placeholder.localIdentifier;
+                        NSString *fileString = [[NSURL fileURLWithPath:filePath] absoluteString];
+                        result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary: [NSDictionary dictionaryWithObjectsAndKeys: localIdentifier, @"preSelectedAsset", fileString, @"image", nil]];
+                        [self sendResult: result];
+                    }
+                    else {
+                        NSLog(@"%@", error);
+                        CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"User not allow access photo library"];   // error callback expects string ATM
+                        [self.commandDelegate sendPluginResult:result callbackId:callbackId];
+                    }
+                }];
             }];
         } else {
             NSString *fileString = [[NSURL fileURLWithPath:filePath] absoluteString];
@@ -556,31 +560,34 @@ static NSString* toBase64(NSData* data) {
             __block PHObjectPlaceholder *placeholder;
             __block PHFetchOptions *fetchOptions;
             // Save to the album
-            [[PHPhotoLibrary sharedPhotoLibrary] performChanges:^{
-                PHAssetCollection *collection = [PHAssetCollection fetchAssetCollectionsWithType:PHAssetCollectionTypeAlbum
-                                                                                         subtype:PHAssetCollectionSubtypeAny
-                                                                                         options:fetchOptions].firstObject;
+            [PHPhotoLibrary requestAuthorization:^(PHAuthorizationStatus status) {
                 
-                assetRequest = [PHAssetChangeRequest creationRequestForAssetFromImageAtFileURL:[NSURL fileURLWithPath:filePath]];
-                placeholder = [assetRequest placeholderForCreatedAsset];
-                fetchOptions = [[PHFetchOptions alloc] init];
-                
-                PHFetchResult *photosAsset = [PHAsset fetchAssetsInAssetCollection:collection options:nil];
-                PHAssetCollectionChangeRequest *albumChangeRequest = [PHAssetCollectionChangeRequest changeRequestForAssetCollection:collection
-                                                                                                                              assets:photosAsset];
-                [albumChangeRequest addAssets:@[placeholder]];
-            } completionHandler:^(BOOL success, NSError *error) {
-                if (success) {
-                    NSString *localIdentifier = placeholder.localIdentifier;
-                    NSLog(@"%@", localIdentifier);
-                    fileString = [[NSURL fileURLWithPath:filePath] absoluteString];
-                    preSelectedAsset = localIdentifier;
-                    dispatch_semaphore_signal(sema);
-                }
-                else {
-                    NSLog(@"%@", error);
-                    dispatch_semaphore_signal(sema);
-                }
+                [[PHPhotoLibrary sharedPhotoLibrary] performChanges:^{
+                    PHAssetCollection *collection = [PHAssetCollection fetchAssetCollectionsWithType:PHAssetCollectionTypeAlbum
+                                                                                             subtype:PHAssetCollectionSubtypeAny
+                                                                                             options:fetchOptions].firstObject;
+                    
+                    assetRequest = [PHAssetChangeRequest creationRequestForAssetFromImageAtFileURL:[NSURL fileURLWithPath:filePath]];
+                    placeholder = [assetRequest placeholderForCreatedAsset];
+                    fetchOptions = [[PHFetchOptions alloc] init];
+                    
+                    PHFetchResult *photosAsset = [PHAsset fetchAssetsInAssetCollection:collection options:nil];
+                    PHAssetCollectionChangeRequest *albumChangeRequest = [PHAssetCollectionChangeRequest changeRequestForAssetCollection:collection
+                                                                                                                                  assets:photosAsset];
+                    [albumChangeRequest addAssets:@[placeholder]];
+                } completionHandler:^(BOOL success, NSError *error) {
+                    if (success) {
+                        NSString *localIdentifier = placeholder.localIdentifier;
+                        NSLog(@"%@", localIdentifier);
+                        fileString = [[NSURL fileURLWithPath:filePath] absoluteString];
+                        preSelectedAsset = localIdentifier;
+                        dispatch_semaphore_signal(sema);
+                    }
+                    else {
+                        NSLog(@"%@", error);
+                        dispatch_semaphore_signal(sema);
+                    }
+                }];
             }];
         } else {
             fileString = [[NSURL fileURLWithPath:filePath] absoluteString];
@@ -675,7 +682,7 @@ static NSString* toBase64(NSData* data) {
     
     dispatch_block_t invoke = ^ (void) {
         CDVPluginResult* result;
-        if ([ALAssetsLibrary authorizationStatus] == ALAuthorizationStatusAuthorized) {
+        if ([ALAssetsLibrary authorizationStatus] == ALAuthorizationStatusAuthorized || [PHPhotoLibrary authorizationStatus] == PHAuthorizationStatusDenied) {
             result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"no image selected"];
         } else {
             result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"has no access to assets"];
@@ -806,20 +813,25 @@ static NSString* toBase64(NSData* data) {
                     __block PHAssetChangeRequest *assetRequest;
                     __block PHObjectPlaceholder *placeholder;
                     // Save to the album
-                    [[PHPhotoLibrary sharedPhotoLibrary] performChanges:^{
-                        assetRequest = [PHAssetChangeRequest creationRequestForAssetFromImageAtFileURL:[NSURL fileURLWithPath:filePath]];
-                        placeholder = [assetRequest placeholderForCreatedAsset];
-                    } completionHandler:^(BOOL success, NSError *error) {
-                        if (success) {
-                            NSString *localIdentifier = placeholder.localIdentifier;
-                            NSString *fileString = [[NSURL fileURLWithPath:filePath] absoluteString];
-                            CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary: [NSDictionary dictionaryWithObjectsAndKeys: localIdentifier, @"preSelectedAsset", fileString, @"image", nil]];
-                            [self sendResult: result];
-                        }
-                        else {
-                            NSLog(@"%@", error);
-                        }
+                    [PHPhotoLibrary requestAuthorization:^(PHAuthorizationStatus status) {
+                        [[PHPhotoLibrary sharedPhotoLibrary] performChanges:^{
+                            assetRequest = [PHAssetChangeRequest creationRequestForAssetFromImageAtFileURL:[NSURL fileURLWithPath:filePath]];
+                            placeholder = [assetRequest placeholderForCreatedAsset];
+                        } completionHandler:^(BOOL success, NSError *error) {
+                            if (success) {
+                                NSString *localIdentifier = placeholder.localIdentifier;
+                                NSString *fileString = [[NSURL fileURLWithPath:filePath] absoluteString];
+                                CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary: [NSDictionary dictionaryWithObjectsAndKeys: localIdentifier, @"preSelectedAsset", fileString, @"image", nil]];
+                                [self sendResult: result];
+                            }
+                            else {
+                                NSLog(@"%@", error);
+                                CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"User not allow access photo library"];   // error callback expects string ATM
+                                [self.commandDelegate sendPluginResult:result callbackId:callbackId];
+                            }
+                        }];
                     }];
+                    
                 } else {
                     NSString *fileString = [[NSURL fileURLWithPath:filePath] absoluteString];
                     ALAssetsLibrary* library =  [[ALAssetsLibrary alloc] init];
