@@ -18,33 +18,14 @@
 */
 package org.apache.cordova.camera;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-
-import org.apache.cordova.BuildHelper;
-import org.apache.cordova.CallbackContext;
-import org.apache.cordova.CordovaPlugin;
-import org.apache.cordova.LOG;
-import org.apache.cordova.PermissionHelper;
-import org.apache.cordova.PluginResult;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import android.Manifest;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.CompressFormat;
@@ -63,8 +44,27 @@ import android.provider.MediaStore;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.FileProvider;
 import android.util.Base64;
-import android.content.pm.PackageManager;
-import android.content.pm.PackageManager.NameNotFoundException;
+
+import org.apache.cordova.BuildHelper;
+import org.apache.cordova.CallbackContext;
+import org.apache.cordova.CordovaPlugin;
+import org.apache.cordova.LOG;
+import org.apache.cordova.PermissionHelper;
+import org.apache.cordova.PluginResult;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 /**
  * This class launches the camera view, allows the user to take a picture, closes the camera view,
@@ -95,7 +95,7 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
     public static final int TAKE_PIC_SEC = 0;
     public static final int SAVE_TO_ALBUM_SEC = 1;
     public static final int FINE_LOCATION_SEC = 2;
-    public static final int LOCATION_SEC = 3;
+
 
     private static final String LOG_TAG = "CameraLauncher";
 
@@ -129,6 +129,7 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
     private LocationManager locationManager = null;
 
     private Bitmap intentBitmap = null;
+    private boolean shouldUpdateLoction = false;
 
 
     /**
@@ -283,6 +284,8 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
         } else {
             PermissionHelper.requestPermissions(this, TAKE_PIC_SEC, permissions);
         }
+
+
     }
 
     public void takePicture(int returnType, int encodingType) {
@@ -469,15 +472,15 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
             if (ActivityCompat.checkSelfPermission(CameraLauncher.this.cordova.getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
                     ActivityCompat.checkSelfPermission(CameraLauncher.this.cordova.getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
 
-                PermissionHelper.requestPermission(CameraLauncher.this, LOCATION_SEC, Manifest.permission.ACCESS_COARSE_LOCATION);
+
                 PermissionHelper.requestPermission(CameraLauncher.this, FINE_LOCATION_SEC, Manifest.permission.ACCESS_FINE_LOCATION);
                 /*
-                * catch the result onRequestPermission
+                * catch the result onRequestPermissionResult
                 * */
-
                 return;
             }
             locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, CameraLauncher.this);
+            shouldUpdateLoction = true;
         } else {
             processBitmapResult(destType, (Bitmap) intent.getExtras().get("data"));
         }
@@ -1339,8 +1342,22 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
                                           int[] grantResults) throws JSONException {
         for (int r : grantResults) {
             if (r == PackageManager.PERMISSION_DENIED) {
-                this.callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.ERROR, PERMISSION_DENIED_ERROR));
-                return;
+
+
+                if (requestCode == FINE_LOCATION_SEC) {
+
+                    try {
+                        processBitmapResult(CameraLauncher.this.destType, intentBitmap);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        CameraLauncher.this.callbackContext.error(e.getMessage());
+                    }
+
+
+                }else {
+                    this.callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.ERROR, PERMISSION_DENIED_ERROR));
+                    return;
+                }
             }
         }
         switch (requestCode) {
@@ -1350,19 +1367,16 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
             case SAVE_TO_ALBUM_SEC:
                 this.getImage(this.srcType, this.destType, this.encodingType);
                 break;
-            case LOCATION_SEC:
-            case FINE_LOCATION_SEC:
-                if (ActivityCompat.checkSelfPermission(CameraLauncher.this.cordova.getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_DENIED &&
-                        ActivityCompat.checkSelfPermission(CameraLauncher.this.cordova.getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_DENIED) {
-                    try {
-                        processBitmapResult(destType, intentBitmap);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                        this.callbackContext.error(e.getMessage());
-                    }
 
-                } else {
+            case FINE_LOCATION_SEC:
+                if (grantResults.length == 0) {
+                    return;
+                }
+                if (ActivityCompat.checkSelfPermission(CameraLauncher.this.cordova.getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
+                        ActivityCompat.checkSelfPermission(CameraLauncher.this.cordova.getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+
                     locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, CameraLauncher.this);
+                    shouldUpdateLoction = true;
                 }
                 break;
         }
@@ -1452,16 +1466,20 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
     public void onLocationChanged(Location location) {
         // Called when a new location is found by the network location provider.
         CameraLauncher.this.location = location;
-
-        try {
-            processBitmapResult(CameraLauncher.this.destType, intentBitmap);
-        } catch (IOException e) {
-            CameraLauncher.this.callbackContext.error(e.getMessage());
-        }
         // only update once per shot
         if (ActivityCompat.checkSelfPermission(CameraLauncher.this.cordova.getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(CameraLauncher.this.cordova.getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             locationManager.removeUpdates(CameraLauncher.this);
+
         }
+        if (shouldUpdateLoction) {
+            try {
+                processBitmapResult(CameraLauncher.this.destType, intentBitmap);
+            } catch (IOException e) {
+                CameraLauncher.this.callbackContext.error(e.getMessage());
+            }
+            shouldUpdateLoction = false;
+        }
+
 
     }
 
