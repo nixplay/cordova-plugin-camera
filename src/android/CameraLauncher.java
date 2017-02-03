@@ -93,6 +93,8 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
     public static final int PERMISSION_DENIED_ERROR = 20;
     public static final int TAKE_PIC_SEC = 0;
     public static final int SAVE_TO_ALBUM_SEC = 1;
+    public static final int FINE_LOCATION_SEC = 2;
+    public static final int LOCATION_SEC = 3;
 
     private static final String LOG_TAG = "CameraLauncher";
 
@@ -173,13 +175,7 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
             if (this.targetHeight < 1) {
                 this.targetHeight = -1;
             }
-            if (!this.cordova.hasPermission(Manifest.permission.ACCESS_COARSE_LOCATION) &&
-                    !this.cordova.hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
 
-                PermissionHelper.requestPermission(this, 0, Manifest.permission.ACCESS_COARSE_LOCATION);
-                PermissionHelper.requestPermission(this, 0, Manifest.permission.ACCESS_FINE_LOCATION);
-
-            }
             // We don't return full-quality PNG files. The camera outputs a JPEG
             // so requesting it as a PNG provides no actual benefit
             if (this.targetHeight == -1 && this.targetWidth == -1 && this.mQuality == 100 &&
@@ -792,7 +788,10 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
                     processResult(_requestCode, _resultCode, _intent);
 
                     // only update once per shot
+                    if (this.cordova.hasPermission(Manifest.permission.ACCESS_COARSE_LOCATION) ||
+                            this.cordova.hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
                     locationManager.removeUpdates(locationListener);
+                  }
 
                 }
 
@@ -806,10 +805,17 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
                 }
             };
 
-            // Register the listener with the Location Manager to receive location updates
+            // // Register the listener with the Location Manager to receive location updates
+            // if (!this.cordova.hasPermission(Manifest.permission.ACCESS_COARSE_LOCATION) &&
+            //         !this.cordova.hasPermission(Manifest.permission.ACCESS_COARSE_LOCATION)) {
+            //     processResult(requestCode, resultCode, intent);
+            //     return;
+            // }
             if (!this.cordova.hasPermission(Manifest.permission.ACCESS_COARSE_LOCATION) &&
-                    !this.cordova.hasPermission(Manifest.permission.ACCESS_COARSE_LOCATION)) {
-                processResult(requestCode, resultCode, intent);
+                    !this.cordova.hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
+
+                PermissionHelper.requestPermission(this, LOCATION_SEC, Manifest.permission.ACCESS_COARSE_LOCATION);
+                PermissionHelper.requestPermission(this, FINE_LOCATION_SEC, Manifest.permission.ACCESS_FINE_LOCATION);
                 return;
             }
 
@@ -1371,6 +1377,10 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
                 break;
             case SAVE_TO_ALBUM_SEC:
                 this.getImage(this.srcType, this.destType, this.encodingType);
+                break;
+            case LOCATION_SEC:
+            case FINE_LOCATION_SEC:
+                locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, locationListener);
                 break;
         }
     }
