@@ -128,7 +128,7 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
     private Location location = null;
     private LocationManager locationManager = null;
 
-    private Bitmap intentBitmap = null;
+    private Intent intentBitmap = null;
     private boolean shouldUpdateLoction = false;
 
 
@@ -466,7 +466,7 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
         if (usesGeolocation()) {
             int rotate = 0;
             if (this.destType == DATA_URL) {
-                intentBitmap = (Bitmap) intent.getExtras().get("data");
+                intentBitmap = intent ;
             }
             locationManager = (LocationManager) this.cordova.getActivity().getSystemService(Context.LOCATION_SERVICE);
             if (ActivityCompat.checkSelfPermission(CameraLauncher.this.cordova.getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
