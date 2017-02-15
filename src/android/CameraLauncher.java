@@ -482,7 +482,7 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
             locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, CameraLauncher.this);
             shouldUpdateLoction = true;
         } else {
-            processBitmapResult(destType, (Bitmap) intent.getExtras().get("data"));
+            processBitmapResult(destType, intent);
         }
 
 
@@ -730,7 +730,7 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
         }
     }
 
-    private void processBitmapResult(int destType, Bitmap intentBitmap) throws IOException {
+    private void processBitmapResult(int destType, Intent intent) throws IOException {
         int rotate = 0;
         // Create an ExifHelper to save the exif data that is lost during compression
         ExifHelper exif = new ExifHelper();
@@ -775,7 +775,7 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
 
             if (bitmap == null) {
                 // Try to get the bitmap from intent.
-                bitmap = intentBitmap;
+                bitmap = (Bitmap) intent.getExtras().get("data");
             }
 
             // Double-check the bitmap.
