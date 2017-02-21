@@ -94,7 +94,7 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
     public static final int PERMISSION_DENIED_ERROR = 20;
     public static final int TAKE_PIC_SEC = 0;
     public static final int SAVE_TO_ALBUM_SEC = 1;
-    public static final int FINE_LOCATION_SEC = 2;
+    public static final int COARSE_LOCATION_SEC = 2;
 
 
     private static final String LOG_TAG = "CameraLauncher";
@@ -469,11 +469,10 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
                 intentBitmap = intent ;
             }
             locationManager = (LocationManager) this.cordova.getActivity().getSystemService(Context.LOCATION_SERVICE);
-            if (ActivityCompat.checkSelfPermission(CameraLauncher.this.cordova.getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
-                    ActivityCompat.checkSelfPermission(CameraLauncher.this.cordova.getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat.checkSelfPermission(CameraLauncher.this.cordova.getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
 
 
-                PermissionHelper.requestPermission(CameraLauncher.this, FINE_LOCATION_SEC, Manifest.permission.ACCESS_FINE_LOCATION);
+                PermissionHelper.requestPermission(CameraLauncher.this, COARSE_LOCATION_SEC, Manifest.permission.ACCESS_COARSE_LOCATION);
                 /*
                 * catch the result onRequestPermissionResult
                 * */
@@ -1344,7 +1343,7 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
             if (r == PackageManager.PERMISSION_DENIED) {
 
 
-                if (requestCode == FINE_LOCATION_SEC) {
+                if (requestCode == COARSE_LOCATION_SEC) {
 
                     try {
                         processBitmapResult(CameraLauncher.this.destType, intentBitmap);
@@ -1368,12 +1367,11 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
                 this.getImage(this.srcType, this.destType, this.encodingType);
                 break;
 
-            case FINE_LOCATION_SEC:
+            case COARSE_LOCATION_SEC:
                 if (grantResults.length == 0) {
                     return;
                 }
-                if (ActivityCompat.checkSelfPermission(CameraLauncher.this.cordova.getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
-                        ActivityCompat.checkSelfPermission(CameraLauncher.this.cordova.getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                if (ActivityCompat.checkSelfPermission(CameraLauncher.this.cordova.getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
 
                     locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, CameraLauncher.this);
                     shouldUpdateLoction = true;
@@ -1467,7 +1465,7 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
         // Called when a new location is found by the network location provider.
         CameraLauncher.this.location = location;
         // only update once per shot
-        if (ActivityCompat.checkSelfPermission(CameraLauncher.this.cordova.getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(CameraLauncher.this.cordova.getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(CameraLauncher.this.cordova.getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             locationManager.removeUpdates(CameraLauncher.this);
 
         }
