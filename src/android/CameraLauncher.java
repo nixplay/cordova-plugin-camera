@@ -566,6 +566,7 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
                 if (this.location != null) {
                     exifData.setGeoTag(location);
                 }
+                exifData.resetOrientation();
                 exifData.writeExifData();
                 exifData = null;
             } catch (IOException e) {
@@ -875,6 +876,7 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
                     if (location != null) {
                         exif.setGeoTag(location);
                     }
+                    exif.resetOrientation();
                     exif.writeExifData();
 
                 }
