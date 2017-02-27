@@ -1405,15 +1405,20 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
                     locationManager.removeUpdates(this);
                     try {
                         processBitmapResult(CameraLauncher.this.destType, intentBitmap);
-                    }catch(Exception e){
+                    } catch (Exception e) {
                         Log.e(LOG_TAG, e.getMessage());
                     }
 
-                }else {
+                } else {
                     if (ActivityCompat.checkSelfPermission(CameraLauncher.this.cordova.getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
                             ActivityCompat.checkSelfPermission(CameraLauncher.this.cordova.getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-
-                        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, CameraLauncher.this);
+                        Criteria criteria = new Criteria();
+                        criteria.setAccuracy(Criteria.ACCURACY_MEDIUM);
+                        criteria.setAltitudeRequired(false);
+                        criteria.setBearingRequired(false);
+                        criteria.setPowerRequirement(Criteria.POWER_LOW);
+                        String provider = locationManager.getBestProvider(criteria, true);
+                        locationManager.requestLocationUpdates(provider, 0, 0, CameraLauncher.this);
                         shouldUpdateLoction = true;
                     }
                 }
