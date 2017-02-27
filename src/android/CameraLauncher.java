@@ -486,18 +486,32 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
                 return;
             }
             Criteria criteria = new Criteria();
-            criteria.setAccuracy(Criteria.ACCURACY_MEDIUM);
-            criteria.setAltitudeRequired(false);
-            criteria.setBearingRequired(false);
+            // Specify Location Provider criteria
+            criteria.setAccuracy(Criteria.ACCURACY_FINE);
             criteria.setPowerRequirement(Criteria.POWER_LOW);
+            criteria.setAltitudeRequired(true);
+            criteria.setBearingRequired(true);
+            criteria.setSpeedRequired(true);
+            criteria.setCostAllowed(true);
             String provider = locationManager.getBestProvider(criteria, true);
             locationManager.requestLocationUpdates(provider, 0, 0, CameraLauncher.this);
 
             location = getLastBestLocation();
+            // weir issue on samsung , location permission granted but service provider not available
+            // Getting GPS status
+            boolean isGPSEnabled = locationManager
+                    .isProviderEnabled(LocationManager.GPS_PROVIDER);
+
+            // Getting network status
+            boolean isNetworkEnabled = locationManager
+                    .isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+
             if (location != null) {
                 locationManager.removeUpdates(this);
                 processBitmapResult(CameraLauncher.this.destType, intentBitmap);
 
+            }else if (!isGPSEnabled && !isNetworkEnabled){
+                processBitmapResult(CameraLauncher.this.destType, intentBitmap);
             }
             shouldUpdateLoction = true;
         } else {
@@ -961,7 +975,8 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
      */
     private void writeUncompressedImage(Uri src, Uri dest) throws FileNotFoundException,
             IOException {
-
+        Log.d("writeUncompressedImage","src "+src.toString());
+        Log.d("writeUncompressedImage","dest "+dest.toString());
         FileInputStream fis = new FileInputStream(FileHelper.stripFileProtocol(src.toString()));
         writeUncompressedImage(fis, dest);
 
@@ -1413,10 +1428,12 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
                     if (ActivityCompat.checkSelfPermission(CameraLauncher.this.cordova.getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
                             ActivityCompat.checkSelfPermission(CameraLauncher.this.cordova.getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                         Criteria criteria = new Criteria();
-                        criteria.setAccuracy(Criteria.ACCURACY_MEDIUM);
-                        criteria.setAltitudeRequired(false);
-                        criteria.setBearingRequired(false);
+                        criteria.setAccuracy(Criteria.ACCURACY_FINE);
                         criteria.setPowerRequirement(Criteria.POWER_LOW);
+                        criteria.setAltitudeRequired(true);
+                        criteria.setBearingRequired(true);
+                        criteria.setSpeedRequired(true);
+                        criteria.setCostAllowed(true);
                         String provider = locationManager.getBestProvider(criteria, true);
                         locationManager.requestLocationUpdates(provider, 0, 0, CameraLauncher.this);
                         shouldUpdateLoction = true;
