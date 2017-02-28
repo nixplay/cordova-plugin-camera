@@ -511,6 +511,7 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
                 processBitmapResult(CameraLauncher.this.destType, intentBitmap);
 
             }else if (!isGPSEnabled && !isNetworkEnabled){
+              locationManager.removeUpdates(this);
                 processBitmapResult(CameraLauncher.this.destType, intentBitmap);
             }
             shouldUpdateLoction = true;
