@@ -487,7 +487,7 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
             }
             Criteria criteria = new Criteria();
             // Specify Location Provider criteria
-            criteria.setAccuracy(Criteria.ACCURACY_FINE);
+            criteria.setAccuracy(Criteria.ACCURACY_LOW);
             criteria.setPowerRequirement(Criteria.POWER_LOW);
             criteria.setAltitudeRequired(true);
             criteria.setBearingRequired(true);
@@ -495,7 +495,7 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
             criteria.setCostAllowed(true);
             String provider = locationManager.getBestProvider(criteria, true);
             locationManager.requestLocationUpdates(provider, 0, 0, CameraLauncher.this);
-
+            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, CameraLauncher.this);
             location = getLastBestLocation();
             // weir issue on samsung , location permission granted but service provider not available
             // Getting GPS status
