@@ -41,6 +41,7 @@ import android.media.MediaScannerConnection.MediaScannerConnectionClient;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 import android.provider.MediaStore;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.FileProvider;
@@ -67,6 +68,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * This class launches the camera view, allows the user to take a picture, closes the camera view,
@@ -132,6 +135,7 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
 
     private Bitmap intentBitmap = null;
     private boolean shouldUpdateLoction = false;
+    private Timer timer;
 
 
     /**
@@ -467,7 +471,7 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
      * @param destType In which form should we return the image
      * @param intent   An Intent, which can return result data to the caller (various data can be attached to Intent "extras").
      */
-    private void processResultFromCamera(int destType, Intent intent) throws IOException {
+    private void processResultFromCamera(final int destType, final Intent intent) throws IOException {
         Log.d(LOG_TAG, "processResultFromCamera.");
         if (usesGeolocation()) {
             int rotate = 0;
@@ -497,6 +501,7 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
             locationManager.requestLocationUpdates(provider, 0, 0, CameraLauncher.this);
             locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, CameraLauncher.this);
             location = getLastBestLocation();
+
             // weir issue on samsung , location permission granted but service provider not available
             // Getting GPS status
             boolean isGPSEnabled = locationManager
@@ -505,14 +510,33 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
             // Getting network status
             boolean isNetworkEnabled = locationManager
                     .isProviderEnabled(LocationManager.NETWORK_PROVIDER);
-
             if (location != null) {
                 locationManager.removeUpdates(this);
                 processBitmapResult(CameraLauncher.this.destType, intentBitmap);
 
             }else if (!isGPSEnabled && !isNetworkEnabled){
-              locationManager.removeUpdates(this);
+                locationManager.removeUpdates(this);
                 processBitmapResult(CameraLauncher.this.destType, intentBitmap);
+            }else{
+                final Handler handler = new Handler ();
+                if(timer == null)timer = new Timer();
+                timer.scheduleAtFixedRate (new TimerTask(){
+                    public void run (){
+                        handler.post (new Runnable (){
+                            public void run (){
+                                if(timer != null) {
+                                    timer.cancel();
+                                }
+                                locationManager.removeUpdates(CameraLauncher.this);
+                                try {
+                                    processBitmapResult(destType, intentBitmap);
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        });
+                    }
+                }, 5000, 5000);
             }
             shouldUpdateLoction = true;
         } else {
@@ -1391,6 +1415,8 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
                 if (requestCode == FINE_LOCATION_SEC) {
 
                     try {
+                        ///TODO cancel timeout callback
+                        timer.cancel();
                         processBitmapResult(CameraLauncher.this.destType, intentBitmap);
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -1526,7 +1552,7 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
     }
 
     public void onLocationChanged(Location location) {
-        Log.d(LOG_TAG, "onLocationChanged.");
+        Log.d(LOG_TAG, "onLocationChanged. "+location.toString());
         // Called when a new location is found by the network location provider.
         CameraLauncher.this.location = location;
         // only update once per shot
@@ -1535,6 +1561,10 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
 
         }
         if (shouldUpdateLoction) {
+            ///TODO cancel timeout callback
+            if(timer != null ) {
+                timer.cancel();
+            }
             try {
                 processBitmapResult(CameraLauncher.this.destType, intentBitmap);
             } catch (IOException e) {
@@ -1547,12 +1577,15 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
     }
 
     public void onStatusChanged(String provider, int status, Bundle extras) {
+        Log.d("Location Update ", "onStatusChanged "+ provider +" status " +status);
     }
 
     public void onProviderEnabled(String provider) {
+        Log.d("Location Update ", "onProviderEnabled "+ provider );
     }
 
     public void onProviderDisabled(String provider) {
+        Log.d("Location Update ", "onProviderEnabled "+ provider );
     }
 
     @Override
