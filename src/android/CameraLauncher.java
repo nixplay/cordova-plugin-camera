@@ -819,7 +819,8 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
         // in the gallery and the modified image is saved in the temporary
         // directory
         if (this.saveToPhotoAlbum) {
-            galleryUri = Uri.fromFile(new File(getPicturesPath()));
+            File file = new File(getPicturesPath());
+            galleryUri = Uri.fromFile(file);
 
             if (this.allowEdit && this.croppedUri != null) {
                 writeUncompressedImage(croppedUri, galleryUri);
@@ -827,6 +828,8 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
                 Uri imageUri = this.imageUri.getFileUri();
                 writeUncompressedImage(imageUri, galleryUri);
             }
+            MediaStore.Images.Media.insertImage(cordova.getActivity().getContentResolver(),
+                    file.getAbsolutePath(), file.getName(), file.getName());
 
             refreshGallery(galleryUri);
         }
