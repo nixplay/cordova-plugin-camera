@@ -550,7 +550,7 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         String imageFileName = "IMG_" + timeStamp + (this.encodingType == JPEG ? ".jpg" : ".png");
         File storageDir = Environment.getExternalStoragePublicDirectory(
-                Environment.DIRECTORY_PICTURES);
+                Environment.DIRECTORY_DCIM);
         String galleryPath = storageDir.getAbsolutePath() + "/" + imageFileName;
         return galleryPath;
     }
@@ -814,12 +814,13 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
 
         Bitmap bitmap = null;
         Uri galleryUri = null;
-
+        String contentUri = null;
+        File file = null;
         // CB-5479 When this option is given the unchanged image should be saved
         // in the gallery and the modified image is saved in the temporary
         // directory
         if (this.saveToPhotoAlbum) {
-            File file = new File(getPicturesPath());
+            file = new File(getPicturesPath());
             galleryUri = Uri.fromFile(file);
 
             if (this.allowEdit && this.croppedUri != null) {
@@ -828,7 +829,7 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
                 Uri imageUri = this.imageUri.getFileUri();
                 writeUncompressedImage(imageUri, galleryUri);
             }
-            MediaStore.Images.Media.insertImage(cordova.getActivity().getContentResolver(),
+            contentUri = MediaStore.Images.Media.insertImage(cordova.getActivity().getContentResolver(),
                     file.getAbsolutePath(), file.getName(), file.getName());
 
             refreshGallery(galleryUri);
@@ -880,8 +881,13 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
                     }
                     JSONObject res = new JSONObject();
                     try {
-                        res.put("image", uri.toString());
-                        res.put("preSelectedAsset", uri.toString().replaceAll("file://", ""));
+                        if(saveToPhotoAlbum && contentUri != null) {
+                            res.put("image", file);
+                            res.put("preSelectedAsset", contentUri);
+                        }else {
+                            res.put("image", uri.toString());
+                            res.put("preSelectedAsset", uri.toString().replaceAll("file://", ""));
+                        }
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
@@ -927,8 +933,13 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
 //                this.callbackContext.success(uri.toString());
                 JSONObject res = new JSONObject();
                 try {
-                    res.put("image", uri.toString());
-                    res.put("preSelectedAsset", uri.toString().replaceAll("file://", ""));
+                    if(saveToPhotoAlbum && contentUri != null) {
+                        res.put("image", file);
+                        res.put("preSelectedAsset", contentUri);
+                    }else {
+                       res.put("image", uri.toString());
+                        res.put("preSelectedAsset", uri.toString().replaceAll("file://", ""));
+                    }
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
