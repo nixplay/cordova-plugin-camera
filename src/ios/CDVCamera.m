@@ -638,18 +638,10 @@ static NSString* toBase64(NSData* data) {
         [PHPhotoLibrary requestAuthorization:^(PHAuthorizationStatus status) {
             
             [[PHPhotoLibrary sharedPhotoLibrary] performChanges:^{
-                PHAssetCollection *collection = [PHAssetCollection fetchAssetCollectionsWithType:PHAssetCollectionTypeAlbum
-                                                                                         subtype:PHAssetCollectionSubtypeAny
-                                                                                         options:fetchOptions].firstObject;
                 
                 assetRequest = [PHAssetChangeRequest creationRequestForAssetFromVideoAtFileURL:movieUrl];
                 placeholder = [assetRequest placeholderForCreatedAsset];
-                fetchOptions = [[PHFetchOptions alloc] init];
                 
-                PHFetchResult *photosAsset = [PHAsset fetchAssetsInAssetCollection:collection options:nil];
-                PHAssetCollectionChangeRequest *albumChangeRequest = [PHAssetCollectionChangeRequest changeRequestForAssetCollection:collection
-                                                                                                                              assets:photosAsset];
-                [albumChangeRequest addAssets:@[placeholder]];
             } completionHandler:^(BOOL success, NSError *error) {
                 if (success) {
                     
