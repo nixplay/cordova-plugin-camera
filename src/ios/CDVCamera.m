@@ -962,6 +962,7 @@ static NSString* toBase64(NSData* data) {
     if (cameraPicker.sourceType == UIImagePickerControllerSourceTypeCamera) {
         // We only allow taking pictures (no video) in this API.
         cameraPicker.mediaTypes = @[(NSString*)kUTTypeImage,(NSString*)kUTTypeMovie];
+        cameraPicker.videoQuality = UIImagePickerControllerQualityTypeHigh;
         // We can only set the camera device if we're actually using the camera.
         cameraPicker.cameraDevice = pictureOptions.cameraDirection;
     } else if (pictureOptions.mediaType == MediaTypeAll) {
