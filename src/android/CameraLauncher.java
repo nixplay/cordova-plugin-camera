@@ -1619,7 +1619,8 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
             }
             locationManager.removeUpdates(CameraLauncher.this);
         } catch (Exception e) {
-            Log.e(LOG_TAG, e.getMessage());
+            //http://crashes.to/s/4b1a9e72650
+            //fixed  java.lang.NullPointerException: println needs a message
         }
     }
 
