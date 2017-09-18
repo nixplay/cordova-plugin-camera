@@ -1430,7 +1430,9 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
 
                     try {
                         ///TODO cancel timeout callback
-                        timer.cancel();
+                        if(timer != null) {
+                            timer.cancel();
+                        }
                         processBitmapResult(CameraLauncher.this.destType, intentBitmap);
                     } catch (IOException e) {
                         e.printStackTrace();
