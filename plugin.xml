@@ -171,6 +171,10 @@
              <string>${PROJECT_NAME} uses location</string>
          </config-file>
 
+         <config-file target="*-Info.plist" parent="NSMicrophoneUsageDescription">
+             <string>${PROJECT_NAME} uses microphone</string>
+         </config-file>
+
      </platform>
 
     <!-- blackberry10 -->

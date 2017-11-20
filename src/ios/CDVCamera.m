@@ -624,8 +624,54 @@ static NSString* toBase64(NSData* data) {
 
 - (CDVPluginResult*)resultForVideo:(NSDictionary*)info
 {
-    NSString* moviePath = [[info objectForKey:UIImagePickerControllerMediaURL] absoluteString];
-    return [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:moviePath];
+    __block NSString *preSelectedAsset = [[NSString alloc] init];
+    __block NSString *fileString = [[NSString alloc] init];
+    __block CDVPluginResult *result = nil;
+    __block NSURL *movieUrl = info[UIImagePickerControllerMediaURL];
+    
+    if ([PHObject class]) {
+        dispatch_semaphore_t sema = dispatch_semaphore_create(0);
+        __block PHAssetChangeRequest *assetRequest;
+        __block PHObjectPlaceholder *placeholder;
+        __block PHFetchOptions *fetchOptions;
+        // Save to the album
+        [PHPhotoLibrary requestAuthorization:^(PHAuthorizationStatus status) {
+            
+            [[PHPhotoLibrary sharedPhotoLibrary] performChanges:^{
+                
+                assetRequest = [PHAssetChangeRequest creationRequestForAssetFromVideoAtFileURL:movieUrl];
+                placeholder = [assetRequest placeholderForCreatedAsset];
+                
+            } completionHandler:^(BOOL success, NSError *error) {
+                if (success) {
+                    
+                    NSLog(@"localIdentifier %@", placeholder.localIdentifier);
+                    
+                    dispatch_semaphore_signal(sema);
+                    result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary: [NSDictionary dictionaryWithObjectsAndKeys: placeholder.localIdentifier, @"preSelectedAsset", placeholder.localIdentifier , @"image", nil]];
+                    [self sendResult: result];
+                }
+                else {
+                    
+                    NSLog(@"%@", error);
+                    CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"User not allow access photo library"];   // error callback expects string ATM
+                    dispatch_semaphore_signal(sema);
+                    [self.commandDelegate sendPluginResult:result callbackId:callbackId];
+                    
+                }
+            }];
+            
+        }];
+    }
+    
+    if(result == nil) {
+        NSLog(@"preSelectedAsset: %@", preSelectedAsset);
+        NSLog(@"fileString: %@", fileString);
+        result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary: [NSDictionary dictionaryWithObjectsAndKeys: preSelectedAsset, @"preSelectedAsset", fileString, @"image", nil]];
+    }
+    return result;
+    //    NSString* moviePath = [[info objectForKey:UIImagePickerControllerMediaURL] absoluteString];
+    //    return [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:moviePath];
 }
 
 - (void)sendResult:(CDVPluginResult*) result {
@@ -836,23 +882,23 @@ static NSString* toBase64(NSData* data) {
                     NSString *fileString = [[NSURL fileURLWithPath:filePath] absoluteString];
                     ALAssetsLibrary* library =  [[ALAssetsLibrary alloc] init];
                     [library writeImageDataToSavedPhotosAlbum:self.data metadata:self.metadata
-                                          completionBlock:^(NSURL *assetUrl, NSError *error) {
-                                              if(error) {
-                                                  NSLog(@"%@", error);
-                                              } else {
-                                                  [library assetForURL:assetUrl
-                                                           resultBlock:^(ALAsset *asset) {
-                                                               // assign the photo to the album
-                                                               NSLog(@"Asset %@", [asset valueForProperty:ALAssetPropertyAssetURL]);
-                                                           }
-                                                          failureBlock:^(NSError* error) {
-                                                              NSLog(@"failed to retrieve image asset:\nError: %@ ", [error localizedDescription]);
-                                                          }];
-                                                  NSString *preSelectedAsset = [assetUrl absoluteString];
-                                                  CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary: [NSDictionary dictionaryWithObjectsAndKeys: preSelectedAsset, @"preSelectedAsset", fileString, @"image", nil]];
-                                                  [self sendResult: result];
-                                              }
-                                          }];
+                                              completionBlock:^(NSURL *assetUrl, NSError *error) {
+                                                  if(error) {
+                                                      NSLog(@"%@", error);
+                                                  } else {
+                                                      [library assetForURL:assetUrl
+                                                               resultBlock:^(ALAsset *asset) {
+                                                                   // assign the photo to the album
+                                                                   NSLog(@"Asset %@", [asset valueForProperty:ALAssetPropertyAssetURL]);
+                                                               }
+                                                              failureBlock:^(NSError* error) {
+                                                                  NSLog(@"failed to retrieve image asset:\nError: %@ ", [error localizedDescription]);
+                                                              }];
+                                                      NSString *preSelectedAsset = [assetUrl absoluteString];
+                                                      CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary: [NSDictionary dictionaryWithObjectsAndKeys: preSelectedAsset, @"preSelectedAsset", fileString, @"image", nil]];
+                                                      [self sendResult: result];
+                                                  }
+                                              }];
                 }
             }
         }
@@ -915,7 +961,8 @@ static NSString* toBase64(NSData* data) {
     
     if (cameraPicker.sourceType == UIImagePickerControllerSourceTypeCamera) {
         // We only allow taking pictures (no video) in this API.
-        cameraPicker.mediaTypes = @[(NSString*)kUTTypeImage];
+        cameraPicker.mediaTypes = @[(NSString*)kUTTypeImage,(NSString*)kUTTypeMovie];
+        cameraPicker.videoQuality = UIImagePickerControllerQualityTypeHigh;
         // We can only set the camera device if we're actually using the camera.
         cameraPicker.cameraDevice = pictureOptions.cameraDirection;
     } else if (pictureOptions.mediaType == MediaTypeAll) {
