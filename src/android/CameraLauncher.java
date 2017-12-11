@@ -302,7 +302,8 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
         this.numPics = queryImgDB(whichContentStore()).getCount();
 
         // Let's use the intent and see what happens
-        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+//        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        Intent intent = new Intent(cordova.getActivity(),CordovaCameraActivity.class);
 
         // Specify file so that large image is captured and returned
         File photo = createCaptureFile(encodingType);
@@ -318,7 +319,8 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
             PackageManager mPm = this.cordova.getActivity().getPackageManager();
             if (intent.resolveActivity(mPm) != null) {
 
-                this.cordova.startActivityForResult((CordovaPlugin) this, intent, (CAMERA + 1) * 16 + returnType + 1);
+//                this.cordova.startActivityForResult((CordovaPlugin) this, intent, (CAMERA + 1) * 16 + returnType + 1);
+                this.cordova.startActivityForResult(this, intent,0);
             } else {
                 Log.d(LOG_TAG, "Error: You don't have a default camera.  Your device may not be CTS complaint.");
             }
