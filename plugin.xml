@@ -89,24 +89,39 @@
           <activity android:name="org.apache.cordova.camera.CordovaCameraActivity" android:theme="@style/CameraPluginAppTheme"/>
           <activity android:name="org.apache.cordova.camera.PreviewActivity" android:theme="@style/CameraPluginAppTheme"/>
         </config-file>
+        <source-file src="src/android/xml/provider_paths.xml" target-dir="res/xml" />
         <source-file src="src/android/CameraLauncher.java" target-dir="src/org/apache/cordova/camera" />
         <source-file src="src/android/CordovaUri.java" target-dir="src/org/apache/cordova/camera" />
         <source-file src="src/android/FileHelper.java" target-dir="src/org/apache/cordova/camera" />
         <source-file src="src/android/ExifHelper.java" target-dir="src/org/apache/cordova/camera" />
         <!--Camera Kit-->
         <source-file src="src/android/CordovaCameraActivity.java" target-dir="src/org/apache/cordova/camera" />
-        <source-file src="src/android/CameraLauncher.java" target-dir="src/org/apache/cordova/camera" />
         <source-file src="src/android/CameraControls.java" target-dir="src/org/apache/cordova/camera" />
-        <source-file src="src/android/ResultHelper.java" target-dir="src/org/apache/cordova/camera" />
+        <source-file src="src/android/ResultHolder.java" target-dir="src/org/apache/cordova/camera" />
         <source-file src="src/android/PreviewActivity.java" target-dir="src/org/apache/cordova/camera" />
-        <source-file src="src/android/xml/provider_paths.xml" target-dir="res/xml" />
 
-        <config-file target="res/values/attr.xml" parent="/resources">
+        <source-file src="src/android/xml/activity_preview.xml" target-dir="res/layout" />
+		<source-file src="src/android/xml/camera_controls.xml" target-dir="res/layout" />
+		<source-file src="src/android/xml/activity_cordova_camera.xml" target-dir="res/layout" />
+		<source-file src="src/android/xml/action_bar.xml" target-dir="res/layout" />
+
+		<source-file src="src/android/xml/localmark.xml" target-dir="res/drawable" />
+		<source-file src="src/android/xml/capture_button.xml" target-dir="res/drawable" />
+        <source-file src="src/android/xml/ic_facing_back.xml" target-dir="res/drawable" />
+        <source-file src="src/android/xml/ic_flash_auto.xml" target-dir="res/drawable" />
+        <source-file src="src/android/xml/ic_flash_on.xml" target-dir="res/drawable" />
+        <source-file src="src/android/xml/ic_switch.xml" target-dir="res/drawable" />
+        <source-file src="src/android/xml/ic_facing_front.xml" target-dir="res/drawable" />
+        <source-file src="src/android/xml/ic_flash_off.xml" target-dir="res/drawable" />
+        <source-file src="src/android/xml/ic_photo.xml" target-dir="res/drawable" />
+        <source-file src="src/android/xml/ic_video.xml" target-dir="res/drawable" />
+        <source-file src="src/android/xml/attr.xml" target-dir="res/values" />
+        <!-- <config-file target="res/values/attr.xml" parent="/resources">
         	<declare-styleable name="CameraControls">
 		        <attr name="camera" format="reference" />
 		        <attr name="cover" format="reference" />
 		    </declare-styleable>
-        </config-file>
+        </config-file> -->
         <config-file target="res/values/styles.xml" parent="/resources">
         	<style name="CameraPluginAppTheme" parent="Theme.AppCompat.Light.NoActionBar">
 			    <item name="colorPrimary">@color/colorPrimary</item>

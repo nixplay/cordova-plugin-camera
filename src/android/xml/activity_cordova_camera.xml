@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="org.apache.cordova.camera.CordovaCameraActivity">
+
+    <FrameLayout
+        android:id="@+id/contentFrame"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#000000">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginBottom="130dp">
+
+            <com.wonderkiln.camerakit.CameraView
+                xmlns:app="http://schemas.android.com/apk/res-auto"
+                android:id="@+id/camera"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                app:ckCropOutput="false"
+                app:ckDoubleTapToToggleFacing="true"
+                app:ckFacing="back"
+                app:ckFlash="off"
+                app:ckFocus="tapWithMarker"
+                app:ckJpegQuality="100"
+                app:ckMethod="standard"
+                app:ckPinchToZoom="true"
+                app:ckVideoQuality="highest"
+                app:ckZoom="1.0"/>
+
+        </FrameLayout>
+
+        <View
+            android:id="@+id/blackCover"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@android:color/black"
+            android:visibility="gone"/>
+
+        <org.apache.cordova.camera.CameraControls
+            xmlns:app="http://schemas.android.com/apk/res-auto"
+            android:id="@+id/camera_control"
+            android:layout_width="match_parent"
+            android:layout_height="130dp"
+            android:layout_gravity="bottom"
+            android:elevation="7dp"
+            app:camera="@+id/camera"
+            app:cover="@+id/blackCover"/>
+
+    </FrameLayout>
+</android.support.constraint.ConstraintLayout>

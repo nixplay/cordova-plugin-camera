@@ -1,5 +1,6 @@
 package org.apache.cordova.camera;
 
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.media.MediaPlayer;
 import android.net.Uri;
@@ -16,36 +17,37 @@ import android.widget.MediaController;
 import android.widget.TextView;
 import android.widget.VideoView;
 
-import com.creedon.Nixplay.R;
-
 import java.io.File;
-
-import butterknife.BindView;
-import butterknife.ButterKnife;
 
 public class PreviewActivity extends AppCompatActivity {
 
-    @BindView(R.id.image)
     ImageView imageView;
 
-    @BindView(R.id.video)
     VideoView videoView;
 
-    @BindView(R.id.actualResolution)
     TextView actualResolution;
 
-    @BindView(R.id.approxUncompressedSize)
     TextView approxUncompressedSize;
 
-    @BindView(R.id.captureLatency)
     TextView captureLatency;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_preview);
-        ButterKnife.bind(this);
 
+        String package_name = getPackageName();
+        Resources resources = getResources();
+
+        setContentView(resources.getIdentifier("activity_preview", "layout", package_name));
+        imageView = (ImageView) findViewById(resources.getIdentifier("imageView", "id", package_name));
+
+        videoView = (VideoView) findViewById(resources.getIdentifier("videoView", "id", package_name));
+
+        actualResolution = (TextView) findViewById(resources.getIdentifier("actualResolution", "id", package_name));
+
+        approxUncompressedSize = (TextView) findViewById(resources.getIdentifier("approxUncompressedSize", "id", package_name));
+
+        captureLatency = (TextView) findViewById(resources.getIdentifier("captureLatency", "id", package_name));
         setupToolbar();
 
         Bitmap bitmap = ResultHolder.getImage();
@@ -88,9 +90,12 @@ public class PreviewActivity extends AppCompatActivity {
 
     private void setupToolbar() {
         if (getSupportActionBar() != null) {
-            View toolbarView = getLayoutInflater().inflate(R.layout.action_bar, null, false);
-            TextView titleView = (TextView) toolbarView.findViewById(R.id.toolbar_title);
-            titleView.setText(Html.fromHtml("<b>Camera</b>Kit"));
+            String package_name = getPackageName();
+            Resources resources = getResources();
+
+            View toolbarView = getLayoutInflater().inflate(resources.getIdentifier("action_bar", "layout", package_name), null, false);
+            TextView titleView = (TextView) toolbarView.findViewById(resources.getIdentifier("toolbar_title", "id", package_name));
+            titleView.setText(Html.fromHtml("Preview"));
 
             getSupportActionBar().setCustomView(toolbarView, new ActionBar.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
             getSupportActionBar().setDisplayShowCustomEnabled(true);
