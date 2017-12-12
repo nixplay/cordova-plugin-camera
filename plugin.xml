@@ -95,7 +95,6 @@
         <source-file src="src/android/ExifHelper.java" target-dir="src/org/apache/cordova/camera" />
         <!--Camera Kit-->
         <source-file src="src/android/CordovaCameraActivity.java" target-dir="src/org/apache/cordova/camera" />
-        <source-file src="src/android/CameraLauncher.java" target-dir="src/org/apache/cordova/camera" />
         <source-file src="src/android/CameraControls.java" target-dir="src/org/apache/cordova/camera" />
         <source-file src="src/android/ResultHelper.java" target-dir="src/org/apache/cordova/camera" />
         <source-file src="src/android/PreviewActivity.java" target-dir="src/org/apache/cordova/camera" />
