@@ -11,6 +11,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.text.Html;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.MediaController;
@@ -39,9 +40,9 @@ public class PreviewActivity extends AppCompatActivity {
         Resources resources = getResources();
 
         setContentView(resources.getIdentifier("activity_preview", "layout", package_name));
-        imageView = (ImageView) findViewById(resources.getIdentifier("imageView", "id", package_name));
+        imageView = (ImageView) findViewById(resources.getIdentifier("image", "id", package_name));
 
-        videoView = (VideoView) findViewById(resources.getIdentifier("videoView", "id", package_name));
+        videoView = (VideoView) findViewById(resources.getIdentifier("video", "id", package_name));
 
         actualResolution = (TextView) findViewById(resources.getIdentifier("actualResolution", "id", package_name));
 
@@ -49,6 +50,22 @@ public class PreviewActivity extends AppCompatActivity {
 
         captureLatency = (TextView) findViewById(resources.getIdentifier("captureLatency", "id", package_name));
         setupToolbar();
+
+
+        Button buttonConfirm = (Button) findViewById(resources.getIdentifier("buttonConfirm", "id", package_name));
+        buttonConfirm.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish();
+            }
+        });
+        Button buttonRetake = (Button) findViewById(resources.getIdentifier("buttonRetake", "id", package_name));
+        buttonRetake.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish();
+            }
+        });
 
         Bitmap bitmap = ResultHolder.getImage();
         File video = ResultHolder.getVideo();
@@ -62,7 +79,6 @@ public class PreviewActivity extends AppCompatActivity {
             approxUncompressedSize.setText(getApproximateFileMegabytes(bitmap) + "MB");
             captureLatency.setText(ResultHolder.getTimeToCallback() + " milliseconds");
         }
-
         else if (video != null) {
             videoView.setVisibility(View.VISIBLE);
             videoView.setVideoURI(Uri.parse(video.getAbsolutePath()));
@@ -80,9 +96,7 @@ public class PreviewActivity extends AppCompatActivity {
                 }
             });
             //videoView.start();
-        }
-
-        else {
+        }else {
             finish();
             return;
         }
