@@ -1,52 +1,65 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="horizontal"
-    android:weightSum="3">
-
-    <FrameLayout
-        android:layout_width="0dp"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:orientation="vertical"
+              android:weightSum="2">
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/recycleview"
+        android:layout_width="match_parent"
+        android:layout_height="20dp"
+        android:background="#FF000000"
+        android:orientation="horizontal"
+        android:layout_gravity="bottom"/>
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_weight="1">
+        android:orientation="horizontal"
+        android:weightSum="3">
 
-        <ImageView
-            android:id="@+id/facingButton"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:layout_gravity="center"
-            android:src="@drawable/ic_facing_front"
-            android:tint="#EEFFFFFF" />
+        <FrameLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1">
 
-    </FrameLayout>
+            <ImageView
+                android:id="@+id/facingButton"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_facing_front"
+                android:tint="#EEFFFFFF"/>
 
-    <FrameLayout
-        android:layout_width="0dp"
-        android:layout_height="match_parent"
-        android:layout_weight="1">
+        </FrameLayout>
 
-        <ImageView
-            android:id="@+id/captureButton"
-            android:layout_width="66dp"
-            android:layout_height="66dp"
-            android:layout_gravity="center"
-            android:src="@drawable/capture_button" />
+        <FrameLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1">
 
-    </FrameLayout>
+            <ImageView
+                android:id="@+id/captureButton"
+                android:layout_width="66dp"
+                android:layout_height="66dp"
+                android:layout_gravity="center"
+                android:src="@drawable/capture_button"/>
 
-    <FrameLayout
-        android:layout_width="0dp"
-        android:layout_height="match_parent"
-        android:layout_weight="1">
+        </FrameLayout>
 
-        <ImageView
-            android:id="@+id/flashButton"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:layout_gravity="center"
-            android:src="@drawable/ic_flash_off"
-            android:tint="#EEFFFFFF" />
+        <FrameLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1">
 
-    </FrameLayout>
+            <ImageView
+                android:id="@+id/flashButton"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_flash_off"
+                android:tint="#EEFFFFFF"/>
 
+        </FrameLayout>
+
+    </LinearLayout>
 </LinearLayout>
