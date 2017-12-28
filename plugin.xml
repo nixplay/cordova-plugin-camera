@@ -106,7 +106,6 @@
 		<source-file src="src/android/xml/camera_controls.xml" target-dir="res/layout" />
 		<source-file src="src/android/xml/activity_cordova_camera.xml" target-dir="res/layout" />
 		<source-file src="src/android/xml/action_bar.xml" target-dir="res/layout" />
-
 		<source-file src="src/android/xml/localmark.xml" target-dir="res/drawable" />
 		<source-file src="src/android/xml/capture_button.xml" target-dir="res/drawable" />
         <source-file src="src/android/xml/ic_facing_back.xml" target-dir="res/drawable" />
