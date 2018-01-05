@@ -8,7 +8,7 @@ import android.content.Intent;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.graphics.Bitmap;
-import android.net.Uri;
+import android.os.Environment;
 import android.os.Parcelable;
 import android.support.annotation.DrawableRes;
 import android.support.annotation.Nullable;
@@ -57,7 +57,7 @@ public class CameraControls extends LinearLayout {
     private long captureStartTime;
     private boolean pendingVideoCapture;
     private boolean capturingVideo;
-    public Uri video_path;
+
     private File videoFile;
 
     public CameraControls(Context context) {
@@ -289,7 +289,25 @@ public class CameraControls extends LinearLayout {
         return true;
     }
     public File getAlbumStorageDir(int mediaType) {
-        return CameraHelper.getOutputMediaFile(mediaType);
+//        return CameraHelper.getOutputMediaFile(mediaType);
+        return new File(getTempDirectoryPath(), ".Vid.mp4");
+    }
+
+    private String getTempDirectoryPath() {
+        File cache = null;
+
+        // SD Card Mounted
+        if (Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
+            cache = getContext().getExternalCacheDir();
+        }
+        // Use internal storage
+        else {
+            cache = getContext().getCacheDir();
+        }
+
+        // Create the cache directory if it doesn't exist
+        cache.mkdirs();
+        return cache.getAbsolutePath();
     }
 
     boolean onTouchFacing(final View view, MotionEvent motionEvent) {

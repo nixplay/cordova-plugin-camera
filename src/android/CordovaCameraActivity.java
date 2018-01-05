@@ -4,7 +4,6 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.os.Bundle;
-import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 
@@ -12,8 +11,10 @@ import com.wonderkiln.camerakit.CameraView;
 
 
 public class CordovaCameraActivity extends AppCompatActivity {
+    private static final String TAG = CordovaCameraActivity.class.getSimpleName();
     CameraView cameraView;
     private CameraControls cameraControl;
+    private static final int CAMERA = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -24,12 +25,9 @@ public class CordovaCameraActivity extends AppCompatActivity {
         setContentView(resources.getIdentifier("activity_cordova_camera", "layout", package_name));
 
         Intent indent = getIntent();
-        Bundle bundle = indent.getExtras();
-
         cameraView = (CameraView) findViewById(resources.getIdentifier("camera", "id", package_name));
         cameraControl = (CameraControls) findViewById(resources.getIdentifier("camera_control", "id", package_name));
-        assert bundle != null;
-        cameraControl.video_path = bundle.getParcelable(MediaStore.EXTRA_OUTPUT);
+
 
     }
     @Override
@@ -62,11 +60,15 @@ public class CordovaCameraActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (resultCode == RESULT_OK && requestCode == CameraControls.VIDEO_REQUEST) {
-            finishActivity(CameraControls.VIDEO_REQUEST);
+            Intent intent = new Intent();
+            setResult(RESULT_OK, intent);
+            finishActivity(CAMERA);
             finish();
 
         } else if (resultCode == RESULT_OK && requestCode == CameraControls.IMAGE_REQUEST) {
-            finishActivity(CameraControls.IMAGE_REQUEST);
+            Intent intent = new Intent();
+            setResult(RESULT_OK, intent);
+            finishActivity(CAMERA);
             finish();
         } else  if (resultCode == RESULT_CANCELED) {
 
