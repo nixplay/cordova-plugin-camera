@@ -767,13 +767,11 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
                 assert cacheFile != null;
                 try {
                     cacheFile.renameTo(file);
-
-                    String contentUri = MediaStore.Images.Media.insertImage(cordova.getActivity().getContentResolver(),
-                            file.getAbsolutePath(), file.getName(), file.getName());
+                    Uri galleryUri = addVideo(file);
                     JSONObject res = new JSONObject();
                     res.put("image", file);
-                    res.put("preSelectedAsset", contentUri);
-
+                    res.put("preSelectedAsset", galleryUri.toString());
+                    refreshGallery(galleryUri);
 
                     this.callbackContext.success(res);
                 } catch (Exception ignored) {
@@ -1018,6 +1016,14 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
 
         this.cleanup(FILE_URI, this.imageUri.getFileUri(), galleryUri, bitmap);
         bitmap = null;
+    }
+
+    public Uri addVideo(File videoFile) {
+        ContentValues values = new ContentValues(3);
+        values.put(MediaStore.Video.Media.TITLE, "My video title");
+        values.put(MediaStore.Video.Media.MIME_TYPE, "video/mp4");
+        values.put(MediaStore.Video.Media.DATA, videoFile.getAbsolutePath());
+        return cordova.getActivity().getContentResolver().insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values);
     }
 
     private int exifToDegrees(int exifOrientation) {
