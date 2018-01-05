@@ -2,20 +2,19 @@ package org.apache.cordova.camera;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.net.Uri;
-import android.os.Environment;
+import android.os.Parcelable;
 import android.support.annotation.DrawableRes;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -32,9 +31,12 @@ import com.wonderkiln.camerakit.CameraView;
 import java.io.File;
 import java.lang.reflect.Field;
 
+import static org.apache.cordova.camera.CameraHelper.MEDIA_TYPE_VIDEO;
+
 
 public class CameraControls extends LinearLayout {
-
+    public static final int IMAGE_REQUEST = 0x112;
+    public static final int VIDEO_REQUEST = 0x111;
     private final Context mContext;
     private final ImageView captureButton;
     private final LinearLayoutManager linearLayoutManager;
@@ -56,6 +58,7 @@ public class CameraControls extends LinearLayout {
     private boolean pendingVideoCapture;
     private boolean capturingVideo;
     public Uri video_path;
+    private File videoFile;
 
     public CameraControls(Context context) {
         this(context, null);
@@ -180,6 +183,7 @@ public class CameraControls extends LinearLayout {
                 cameraView = (CameraView) view;
                 cameraView.bindCameraKitListener(this);
                 setFacingImageBasedOnCamera();
+
             }
         }
 
@@ -190,6 +194,12 @@ public class CameraControls extends LinearLayout {
                 coverView.setVisibility(GONE);
             }
         }
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Parcelable state) {
+        super.onRestoreInstanceState(state);
+
     }
 
     private void setFacingImageBasedOnCamera() {
@@ -211,17 +221,20 @@ public class CameraControls extends LinearLayout {
         ResultHolder.setNativeCaptureSize(cameraView.getCaptureSize());
         ResultHolder.setTimeToCallback(callbackTime - captureStartTime);
         Intent intent = new Intent(getContext(), PreviewActivity.class);
-        getContext().startActivity(intent);
+        intent.putExtra("requestCode", IMAGE_REQUEST);
+        ((Activity)getContext()).startActivityForResult(intent,IMAGE_REQUEST);
     }
 
     public void videoCaptured(CameraKitVideo video) {
-        File videoFile = video.getVideoFile();
-        if (videoFile != null) {
+
+
+        if (videoFile != null && videoFile.exists()) {
             ResultHolder.dispose();
             ResultHolder.setVideo(videoFile);
             ResultHolder.setNativeCaptureSize(cameraView.getPreviewSize());
             Intent intent = new Intent(getContext(), PreviewActivity.class);
-            getContext().startActivity(intent);
+            intent.putExtra("requestCode", VIDEO_REQUEST);
+            ((Activity)getContext()).startActivityForResult(intent,VIDEO_REQUEST);
         }
     }
 
@@ -239,8 +252,8 @@ public class CameraControls extends LinearLayout {
                             capturingVideo = true;
 
 
-                            File albumPath = getAlbumStorageDir("Nixplay");
-                            File videoFile = new File(albumPath.getAbsolutePath()+File.separator+captureDownTime+".mp4");
+                            videoFile  = getAlbumStorageDir(MEDIA_TYPE_VIDEO);
+
                             cameraView.captureVideo(videoFile,new CameraKitEventCallback<CameraKitVideo>(){
 
                                 @Override
@@ -275,14 +288,8 @@ public class CameraControls extends LinearLayout {
         }
         return true;
     }
-    public File getAlbumStorageDir(String albumName) {
-        // Get the directory for the user's public pictures directory.
-        File file = new File(Environment.getExternalStoragePublicDirectory(
-                Environment.DIRECTORY_PICTURES), albumName);
-        if (!file.mkdirs()) {
-            Log.e("Camera Controls", "Directory not created");
-        }
-        return file;
+    public File getAlbumStorageDir(int mediaType) {
+        return CameraHelper.getOutputMediaFile(mediaType);
     }
 
     boolean onTouchFacing(final View view, MotionEvent motionEvent) {
@@ -307,9 +314,11 @@ public class CameraControls extends LinearLayout {
                                 if (cameraView.isFacingFront()) {
                                     cameraView.setFacing(CameraKit.Constants.FACING_BACK);
                                     changeViewImageResource((ImageView) view, resources.getIdentifier("ic_facing_front", "drawable", package_name));
+
                                 } else {
                                     cameraView.setFacing(CameraKit.Constants.FACING_FRONT);
                                     changeViewImageResource((ImageView) view, resources.getIdentifier("ic_facing_back", "drawable", package_name));
+
                                 }
 
                                 coverView.animate()

@@ -1,5 +1,6 @@
 package org.apache.cordova.camera;
 
+import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.media.MediaPlayer;
@@ -12,25 +13,23 @@ import android.text.Html;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.MediaController;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.VideoView;
 
 import java.io.File;
+
+import static org.apache.cordova.camera.CameraControls.IMAGE_REQUEST;
+import static org.apache.cordova.camera.CameraControls.VIDEO_REQUEST;
 
 public class PreviewActivity extends AppCompatActivity {
 
     ImageView imageView;
 
     VideoView videoView;
-
-    TextView actualResolution;
-
-    TextView approxUncompressedSize;
-
-    TextView captureLatency;
+    private int requestCode;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -44,18 +43,18 @@ public class PreviewActivity extends AppCompatActivity {
 
         videoView = (VideoView) findViewById(resources.getIdentifier("video", "id", package_name));
 
-        actualResolution = (TextView) findViewById(resources.getIdentifier("actualResolution", "id", package_name));
-
-        approxUncompressedSize = (TextView) findViewById(resources.getIdentifier("approxUncompressedSize", "id", package_name));
-
-        captureLatency = (TextView) findViewById(resources.getIdentifier("captureLatency", "id", package_name));
         setupToolbar();
-
+        requestCode = ((Integer)getIntent().getExtras().get("requestCode"));
 
         Button buttonConfirm = (Button) findViewById(resources.getIdentifier("buttonConfirm", "id", package_name));
         buttonConfirm.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                Intent intent = new Intent();
+                setResult(RESULT_OK, intent);
+
+                finishActivity(requestCode);
+
                 finish();
             }
         });
@@ -63,41 +62,54 @@ public class PreviewActivity extends AppCompatActivity {
         buttonRetake.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                Intent intent = new Intent();
+                setResult(RESULT_CANCELED, intent);
+
+                finishActivity(requestCode);
                 finish();
             }
         });
 
-        Bitmap bitmap = ResultHolder.getImage();
-        File video = ResultHolder.getVideo();
 
-        if (bitmap != null) {
+
+
+        if (requestCode == IMAGE_REQUEST) {
+            Bitmap bitmap = ResultHolder.getImage();
             imageView.setVisibility(View.VISIBLE);
 
             imageView.setImageBitmap(bitmap);
 
-            actualResolution.setText(bitmap.getWidth() + " x " + bitmap.getHeight());
-            approxUncompressedSize.setText(getApproximateFileMegabytes(bitmap) + "MB");
-            captureLatency.setText(ResultHolder.getTimeToCallback() + " milliseconds");
         }
-        else if (video != null) {
-            videoView.setVisibility(View.VISIBLE);
-            videoView.setVideoURI(Uri.parse(video.getAbsolutePath()));
-            MediaController mediaController = new MediaController(this);
-            mediaController.setVisibility(View.GONE);
-            videoView.setMediaController(mediaController);
-            videoView.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-                @Override
-                public void onPrepared(MediaPlayer mp) {
-                    mp.setLooping(true);
-                    mp.start();
+        else if (requestCode == VIDEO_REQUEST) {
+            File video = ResultHolder.getVideo();
+            if(video.exists()) {
+                videoView.setVisibility(View.VISIBLE);
+                videoView.setVideoURI(Uri.parse(video.getAbsolutePath()));
+                MediaController mediaController = new MediaController(this);
+                mediaController.setVisibility(View.GONE);
+                videoView.setMediaController(mediaController);
+                videoView.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+                    @Override
+                    public void onPrepared(MediaPlayer mp) {
+                        mp.setLooping(true);
+                        mp.start();
 
-                    float multiplier = (float) videoView.getWidth() / (float) mp.getVideoWidth();
-                    videoView.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (int) (mp.getVideoHeight() * multiplier)));
-                }
-            });
-            //videoView.start();
+                        float multiplier = (float) videoView.getWidth() / (float) mp.getVideoWidth();
+                        videoView.setLayoutParams(new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (int) (mp.getVideoHeight() * multiplier)));
+                    }
+                });
+                videoView.start();
+            }else{
+                Intent intent = new Intent();
+                setResult(RESULT_CANCELED, intent);
+                finishActivity(requestCode);
+                return;
+            }
+
         }else {
-            finish();
+            Intent intent = new Intent();
+            setResult(RESULT_CANCELED, intent);
+            finishActivity(requestCode);
             return;
         }
     }

@@ -54,6 +54,7 @@ public class ResultHolder {
         setImage(null);
         setNativeCaptureSize(null);
         setTimeToCallback(0);
+        setVideo(null);
     }
 
 }

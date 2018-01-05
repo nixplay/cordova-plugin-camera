@@ -59,4 +59,17 @@ public class CordovaCameraActivity extends AppCompatActivity {
             cameraView.start();
         }
     }
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (resultCode == RESULT_OK && requestCode == CameraControls.VIDEO_REQUEST) {
+            finishActivity(CameraControls.VIDEO_REQUEST);
+            finish();
+
+        } else if (resultCode == RESULT_OK && requestCode == CameraControls.IMAGE_REQUEST) {
+            finishActivity(CameraControls.IMAGE_REQUEST);
+            finish();
+        } else  if (resultCode == RESULT_CANCELED) {
+
+        }
+    }
 }

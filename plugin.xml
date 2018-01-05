@@ -100,6 +100,7 @@
         <source-file src="src/android/CordovaCameraActivity.java" target-dir="src/org/apache/cordova/camera" />
         <source-file src="src/android/CameraControls.java" target-dir="src/org/apache/cordova/camera" />
         <source-file src="src/android/ResultHolder.java" target-dir="src/org/apache/cordova/camera" />
+        <source-file src="src/android/CameraHelper.java" target-dir="src/org/apache/cordova/camera" />
         <source-file src="src/android/PreviewActivity.java" target-dir="src/org/apache/cordova/camera" />
 
         <source-file src="src/android/xml/activity_preview.xml" target-dir="res/layout" />

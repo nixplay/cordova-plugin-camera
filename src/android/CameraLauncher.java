@@ -719,6 +719,12 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
     public void onActivityResult(int requestCode, int resultCode, Intent intent) {
         // Get src and dest types from request code for a Camera Activity
         Log.d(LOG_TAG, "onActivityResult.");
+        if (ResultHolder.getImage() != null) {
+            Log.d("image:", ResultHolder.getImage().toString());
+        } else if (ResultHolder.getVideo() != null) {
+            Log.d("video:", ResultHolder.getVideo().toString());
+        }
+
         int srcType = (requestCode / 16) - 1;
         int destType = (requestCode % 16) - 1;
 
