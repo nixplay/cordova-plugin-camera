@@ -565,9 +565,9 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
         return storageDir.getAbsolutePath() + "/" + imageFileName;
     }
 
-    private void refreshGallery(Uri contentUri) {
+    private void refreshGallery(Uri _contentUri) {
         Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
-        mediaScanIntent.setData(contentUri);
+        mediaScanIntent.setData(_contentUri);
         this.cordova.getActivity().sendBroadcast(mediaScanIntent);
     }
 
@@ -885,16 +885,17 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
         // directory
         if (this.saveToPhotoAlbum) {
             file = new File(getPicturesPath(MEDIA_TYPE_IMAGE));
-            galleryUri = Uri.fromFile(file);
+            Uri fileUri = Uri.fromFile(file);
 
             if (this.allowEdit && this.croppedUri != null) {
-                writeUncompressedImage(croppedUri, galleryUri);
+                writeUncompressedImage(croppedUri, fileUri);
             } else {
                 Uri imageUri = this.imageUri.getFileUri();
-                writeUncompressedImage(imageUri, galleryUri);
+                writeUncompressedImage(imageUri, fileUri);
             }
-            contentUri = MediaStore.Images.Media.insertImage(cordova.getActivity().getContentResolver(),
-                    file.getAbsolutePath(), file.getName(), file.getName());
+            galleryUri = addImage(file);
+            //content uri all the way
+            contentUri = galleryUri.toString();
 
             refreshGallery(galleryUri);
         }
@@ -946,10 +947,10 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
                     JSONObject res = new JSONObject();
                     try {
                         if (saveToPhotoAlbum && contentUri != null) {
-                            res.put("image", file);
+                            res.put("image", file.toString());
                             res.put("preSelectedAsset", contentUri);
                         } else {
-                            res.put("image", uri.toString());
+                            res.put("image", file.toString());
                             res.put("preSelectedAsset", uri.toString().replaceAll("file://", ""));
                         }
                     } catch (JSONException e) {
@@ -998,11 +999,11 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
                 JSONObject res = new JSONObject();
                 try {
                     if (saveToPhotoAlbum && contentUri != null) {
-                        res.put("image", file);
+                        res.put("image", file.toString());
                         res.put("preSelectedAsset", contentUri);
                     } else {
-                        res.put("image", uri.toString());
-                        res.put("preSelectedAsset", uri.toString().replaceAll("file://", ""));
+                        res.put("image", file.toString());
+                        res.put("preSelectedAsset", contentUri);
                     }
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -1020,10 +1021,23 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
 
     public Uri addVideo(File videoFile) {
         ContentValues values = new ContentValues(3);
-        values.put(MediaStore.Video.Media.TITLE, "My video title");
+        String videoNname = videoFile.getAbsolutePath();
+        String videoTitle = videoNname.substring(videoNname.lastIndexOf("/")+1,videoNname.lastIndexOf("."));
+
+        values.put(MediaStore.Video.Media.TITLE, videoTitle);
         values.put(MediaStore.Video.Media.MIME_TYPE, "video/mp4");
         values.put(MediaStore.Video.Media.DATA, videoFile.getAbsolutePath());
         return cordova.getActivity().getContentResolver().insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values);
+    }
+    public Uri addImage(File imageFile) {
+        ContentValues values = new ContentValues(3);
+        String imageName = imageFile.getAbsolutePath();
+        String imageTitle = imageName.substring(imageName.lastIndexOf("/")+1,imageName.lastIndexOf("."));
+
+        values.put(MediaStore.Images.Media.TITLE, imageTitle);
+        values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
+        values.put(MediaStore.Images.Media.DATA, imageFile.getAbsolutePath());
+        return cordova.getActivity().getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
     }
 
     private int exifToDegrees(int exifOrientation) {
