@@ -22,16 +22,16 @@ import android.view.animation.OvershootInterpolator;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 
-import com.wonderkiln.camerakit.CameraKit;
-import com.wonderkiln.camerakit.CameraKitEventCallback;
-import com.wonderkiln.camerakit.CameraKitImage;
-import com.wonderkiln.camerakit.CameraKitVideo;
-import com.wonderkiln.camerakit.CameraView;
+import com.otaliastudios.cameraview.CameraListener;
+import com.otaliastudios.cameraview.CameraOptions;
+import com.otaliastudios.cameraview.CameraUtils;
+import com.otaliastudios.cameraview.CameraView;
+import com.otaliastudios.cameraview.Facing;
+import com.otaliastudios.cameraview.Flash;
+import com.otaliastudios.cameraview.SessionType;
 
 import java.io.File;
 import java.lang.reflect.Field;
-
-import static org.apache.cordova.camera.CameraHelper.MEDIA_TYPE_VIDEO;
 
 
 public class CameraControls extends LinearLayout {
@@ -40,6 +40,7 @@ public class CameraControls extends LinearLayout {
     private final Context mContext;
     private final ImageView captureButton;
     private final LinearLayoutManager linearLayoutManager;
+    private final ImageView videoButton;
 
     private int cameraViewId = -1;
     private CameraView cameraView;
@@ -98,6 +99,15 @@ public class CameraControls extends LinearLayout {
                 return onTouchCapture(v,event);
             }
         });
+
+        videoButton = (ImageView) view.findViewById(resources.getIdentifier("videoButton", "id", package_name));
+        videoButton.setOnTouchListener(new OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                return onTouchVideo(v,event);
+            }
+        });
+
         facingButton = (ImageView) view.findViewById(resources.getIdentifier("facingButton", "id", package_name));
         facingButton.setOnTouchListener(new OnTouchListener() {
             @Override
@@ -181,7 +191,29 @@ public class CameraControls extends LinearLayout {
             View view = getRootView().findViewById(cameraViewId);
             if (view instanceof CameraView) {
                 cameraView = (CameraView) view;
-                cameraView.bindCameraKitListener(this);
+                cameraView.addCameraListener(new CameraListener() {
+                    @Override
+                    public void onCameraOpened(CameraOptions options) {
+                        super.onCameraOpened(options);
+                    }
+
+                    @Override
+                    public void onCameraClosed() {
+                        super.onCameraClosed();
+                    }
+
+                    @Override
+                    public void onPictureTaken(byte[] jpeg) {
+                        super.onPictureTaken(jpeg);
+                        imageCaptured(jpeg);
+                    }
+
+                    @Override
+                    public void onVideoTaken(File video) {
+                        super.onVideoTaken(video);
+                        videoCaptured(video);
+                    }
+                });
                 setFacingImageBasedOnCamera();
 
             }
@@ -205,30 +237,34 @@ public class CameraControls extends LinearLayout {
     private void setFacingImageBasedOnCamera() {
         String package_name = mContext.getPackageName();
         Resources resources = mContext.getResources();
-        if (cameraView.isFacingFront()) {
+        if (cameraView.getFacing() == Facing.FRONT) {
             facingButton.setImageResource(resources.getIdentifier("ic_facing_back", "drawable", package_name));
         } else {
             facingButton.setImageResource(resources.getIdentifier("ic_facing_front", "drawable", package_name));
         }
     }
 
-    public void imageCaptured(CameraKitImage cameraKitImage) {
+    public void imageCaptured(byte[] b) {
 
-        long callbackTime = System.currentTimeMillis();
-        Bitmap bitmap = cameraKitImage.getBitmap();
-        ResultHolder.dispose();
-        ResultHolder.setImage(bitmap);
-        ResultHolder.setNativeCaptureSize(cameraView.getCaptureSize());
-        ResultHolder.setTimeToCallback(callbackTime - captureStartTime);
-        Intent intent = new Intent(getContext(), PreviewActivity.class);
-        intent.putExtra("requestCode", IMAGE_REQUEST);
-        ((Activity)getContext()).startActivityForResult(intent,IMAGE_REQUEST);
+        final long callbackTime = System.currentTimeMillis();
+        CameraUtils.decodeBitmap(b, 1000, 1000, new CameraUtils.BitmapCallback() {
+            @Override
+            public void onBitmapReady(Bitmap bitmap) {
+                ResultHolder.dispose();
+                ResultHolder.setImage(bitmap);
+                ResultHolder.setNativeCaptureSize(cameraView.getPictureSize());
+                ResultHolder.setTimeToCallback(callbackTime - captureStartTime);
+                Intent intent = new Intent(getContext(), PreviewActivity.class);
+                intent.putExtra("requestCode", IMAGE_REQUEST);
+                ((Activity) getContext()).startActivityForResult(intent, IMAGE_REQUEST);
+            };
+        });
     }
 
-    public void videoCaptured(CameraKitVideo video) {
+    public void videoCaptured(File video) {
 
 
-        if (videoFile != null && videoFile.exists()) {
+        if (video != null && video.exists()) {
             ResultHolder.dispose();
             ResultHolder.setVideo(videoFile);
             ResultHolder.setNativeCaptureSize(cameraView.getPreviewSize());
@@ -238,58 +274,107 @@ public class CameraControls extends LinearLayout {
         }
     }
 
-
-    boolean onTouchCapture(View view, MotionEvent motionEvent) {
+    boolean onTouchVideo(View view, MotionEvent motionEvent) {
         handleViewTouchFeedback(view, motionEvent);
         switch (motionEvent.getAction()) {
             case MotionEvent.ACTION_DOWN: {
+
                 captureDownTime = System.currentTimeMillis();
-                pendingVideoCapture = true;
-                postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (pendingVideoCapture) {
-                            capturingVideo = true;
-
-
-                            videoFile  = getAlbumStorageDir(MEDIA_TYPE_VIDEO);
-
-                            cameraView.captureVideo(videoFile,new CameraKitEventCallback<CameraKitVideo>(){
-
-                                @Override
-                                public void callback(CameraKitVideo cameraKitVideo) {
-                                    videoCaptured(cameraKitVideo);
-                                }
-
-                            });
-                        }
-                    }
-                }, 250);
+                cameraView.setSessionType(SessionType.VIDEO);
+//                pendingVideoCapture = true;
+//                postDelayed(new Runnable() {
+//                    @Override
+//                    public void run() {
+//                        if (pendingVideoCapture) {
+//                            capturingVideo = true;
+//
+//
+//                            videoFile  = getAlbumStorageDir();
+//                            cameraView.setSessionType(SessionType.VIDEO);
+//                            cameraView.startCapturingVideo(videoFile);
+//
+//                        }
+//                    }
+//                }, 250);
                 break;
             }
 
             case MotionEvent.ACTION_UP: {
-                pendingVideoCapture = false;
-
-                if (capturingVideo) {
-                    capturingVideo = false;
-                    cameraView.stopVideo();
-                } else {
-                    captureStartTime = System.currentTimeMillis();
-                    cameraView.captureImage(new CameraKitEventCallback<CameraKitImage>() {
-                        @Override
-                        public void callback(CameraKitImage cameraKitImage) {
-                            imageCaptured(cameraKitImage);
+//                pendingVideoCapture = false;
+//
+//                if (capturingVideo) {
+//                    capturingVideo = false;
+//                    cameraView.stopCapturingVideo();
+//                    cameraView.setSessionType(SessionType.PICTURE);
+//                } else {
+//                    cameraView.setSessionType(SessionType.PICTURE);
+//                    captureStartTime = System.currentTimeMillis();
+//                    cameraView.capturePicture();
+//                }
+                postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (!capturingVideo) {
+                            capturingVideo = true;
+                            videoFile = getAlbumStorageDir();
+                            cameraView.startCapturingVideo(videoFile);
+                        } else {
+                            capturingVideo = false;
+                            cameraView.stopCapturingVideo();
                         }
-                    });
-                }
+                    }
+                },250);
                 break;
             }
         }
         return true;
     }
-    public File getAlbumStorageDir(int mediaType) {
-//        return CameraHelper.getOutputMediaFile(mediaType);
+    boolean onTouchCapture(View view, MotionEvent motionEvent) {
+        handleViewTouchFeedback(view, motionEvent);
+        switch (motionEvent.getAction()) {
+            case MotionEvent.ACTION_DOWN: {
+                captureDownTime = System.currentTimeMillis();
+//                pendingVideoCapture = true;
+//                postDelayed(new Runnable() {
+//                    @Override
+//                    public void run() {
+//                        if (pendingVideoCapture) {
+//                            capturingVideo = true;
+//
+//
+//                            videoFile  = getAlbumStorageDir();
+//                            cameraView.setSessionType(SessionType.VIDEO);
+//                            cameraView.startCapturingVideo(videoFile);
+//
+//                        }
+//                    }
+//                }, 250);
+                break;
+            }
+
+            case MotionEvent.ACTION_UP: {
+//                pendingVideoCapture = false;
+
+//                if (capturingVideo) {
+//                    capturingVideo = false;
+//                    cameraView.stopCapturingVideo();
+//                    cameraView.setSessionType(SessionType.PICTURE);
+//                } else {
+                    cameraView.setSessionType(SessionType.PICTURE);
+                    captureStartTime = System.currentTimeMillis();
+                postDelayed(new Runnable() {
+                                @Override
+                                public void run() {
+                                    cameraView.capturePicture();
+                                }
+                            },250);
+//                }
+                break;
+            }
+        }
+        return true;
+    }
+    public File getAlbumStorageDir() {
         return new File(getTempDirectoryPath(), ".Vid.mp4");
     }
 
@@ -329,12 +414,12 @@ public class CameraControls extends LinearLayout {
                                 Resources resources = mContext.getResources();
 
 
-                                if (cameraView.isFacingFront()) {
-                                    cameraView.setFacing(CameraKit.Constants.FACING_BACK);
+                                if (cameraView.getFacing() == Facing.FRONT) {
+                                    cameraView.setFacing(Facing.BACK);
                                     changeViewImageResource((ImageView) view, resources.getIdentifier("ic_facing_front", "drawable", package_name));
 
                                 } else {
-                                    cameraView.setFacing(CameraKit.Constants.FACING_FRONT);
+                                    cameraView.setFacing(Facing.FRONT);
                                     changeViewImageResource((ImageView) view, resources.getIdentifier("ic_facing_back", "drawable", package_name));
 
                                 }
@@ -367,11 +452,11 @@ public class CameraControls extends LinearLayout {
                 String package_name = mContext.getPackageName();
                 Resources resources = mContext.getResources();
 
-                if (cameraView.getFlash() == CameraKit.Constants.FLASH_OFF) {
-                    cameraView.setFlash( CameraKit.Constants.FLASH_ON );
+                if (cameraView.getFlash() == Flash.OFF) {
+                    cameraView.setFlash( Flash.ON );
                     changeViewImageResource((ImageView) view, resources.getIdentifier("ic_flash_on", "drawable", package_name));
                 } else {
-                    cameraView.setFlash( CameraKit.Constants.FLASH_OFF);
+                    cameraView.setFlash(Flash.OFF);
                     changeViewImageResource((ImageView) view, resources.getIdentifier("ic_flash_off", "drawable", package_name));
                 }
 

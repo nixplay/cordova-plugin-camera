@@ -739,7 +739,8 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
                     FileOutputStream out = null;
                     try {
                         out = new FileOutputStream(sourcePath);
-                        ResultHolder.getImage().compress(Bitmap.CompressFormat.JPEG, 100, out); // bmp is your Bitmap instance
+                        Bitmap imageBitmap = ResultHolder.getImage();
+                        imageBitmap.compress(Bitmap.CompressFormat.JPEG, 100, out); // bmp is your Bitmap instance
                         // PNG is a lossless format, the compression factor (100) is ignored
                     } catch (Exception e) {
                         e.printStackTrace();

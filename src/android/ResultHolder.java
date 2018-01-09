@@ -3,7 +3,7 @@ package org.apache.cordova.camera;
 import android.graphics.Bitmap;
 import android.support.annotation.Nullable;
 
-import com.wonderkiln.camerakit.Size;
+import com.otaliastudios.cameraview.Size;
 
 import java.io.File;
 

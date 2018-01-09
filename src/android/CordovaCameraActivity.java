@@ -7,7 +7,7 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 
-import com.wonderkiln.camerakit.CameraView;
+import com.otaliastudios.cameraview.CameraView;
 
 
 public class CordovaCameraActivity extends AppCompatActivity {
