@@ -16,23 +16,28 @@
 			android:layout_marginBottom="130dp"
 			android:visibility="visible">
 
-			<com.wonderkiln.camerakit.CameraView
+			<com.otaliastudios.cameraview.CameraView
 				xmlns:app="http://schemas.android.com/apk/res-auto"
 				android:id="@+id/camera"
 				android:layout_width="match_parent"
 				android:layout_height="match_parent"
 				android:adjustViewBounds="true"
 				android:visibility="visible"
-				app:ckCropOutput="false"
-				app:ckDoubleTapToToggleFacing="true"
-				app:ckFacing="back"
-				app:ckFlash="off"
-				app:ckFocus="tapWithMarker"
-				app:ckJpegQuality="100"
-				app:ckMethod="speed"
-				app:ckPinchToZoom="true"
-				app:ckVideoQuality="highest"
-				app:ckZoom="1.0"
+				android:keepScreenOn="true"
+				app:cameraPlaySounds="true"
+				app:cameraGrid="off"
+				app:cameraCropOutput="false"
+				app:cameraFacing="back"
+				app:cameraFlash="off"
+				app:cameraAudio="on"
+				app:cameraGestureTap="focusWithMarker"
+				app:cameraGestureLongTap="none"
+				app:cameraGesturePinch="zoom"
+				app:cameraGestureScrollHorizontal="exposureCorrection"
+				app:cameraGestureScrollVertical="none"
+				app:cameraJpegQuality="100"
+				app:cameraSessionType="picture"
+				app:cameraVideoQuality="max1080p"
 				/>
 
 		</FrameLayout>
