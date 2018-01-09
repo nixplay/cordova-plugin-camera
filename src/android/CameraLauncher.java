@@ -125,8 +125,7 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
 
     protected final static String[] permissions = {Manifest.permission.CAMERA,
             Manifest.permission.READ_EXTERNAL_STORAGE,
-            Manifest.permission.WRITE_EXTERNAL_STORAGE,
-            Manifest.permission.MEDIA_CONTENT_CONTROL};
+            Manifest.permission.WRITE_EXTERNAL_STORAGE};
 
     public CallbackContext callbackContext;
     private int numPics;
@@ -265,6 +264,8 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
         Log.d(LOG_TAG, "callTakePicture.");
         boolean saveAlbumPermission = PermissionHelper.hasPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
         boolean takePicturePermission = PermissionHelper.hasPermission(this, Manifest.permission.CAMERA);
+        boolean writeStoragePermission = PermissionHelper.hasPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+
 
         // CB-10120: The CAMERA permission does not need to be requested unless it is declared
         // in AndroidManifest.xml. This plugin does not declare it, but others may and so we must
@@ -289,12 +290,16 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
             }
         }
 
-        if (takePicturePermission && saveAlbumPermission) {
+        if (takePicturePermission && saveAlbumPermission && writeStoragePermission ) {
             takePicture(returnType, encodingType);
-        } else if (saveAlbumPermission && !takePicturePermission) {
+        } else if (saveAlbumPermission && !takePicturePermission && writeStoragePermission ) {
             PermissionHelper.requestPermission(this, TAKE_PIC_SEC, Manifest.permission.CAMERA);
-        } else if (!saveAlbumPermission && takePicturePermission) {
-            PermissionHelper.requestPermission(this, TAKE_PIC_SEC, Manifest.permission.READ_EXTERNAL_STORAGE);
+        } else if (!saveAlbumPermission && takePicturePermission && !writeStoragePermission ) {
+            String[] storage_permissions = {
+                    Manifest.permission.READ_EXTERNAL_STORAGE,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE};
+
+            PermissionHelper.requestPermissions(this, TAKE_PIC_SEC, storage_permissions);
         } else {
             PermissionHelper.requestPermissions(this, TAKE_PIC_SEC, permissions);
         }
