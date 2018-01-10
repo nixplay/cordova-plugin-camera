@@ -90,7 +90,7 @@
                   android:name="android.support.FILE_PROVIDER_PATHS"
                   android:resource="@xml/provider_paths"/>
           </provider>
-          <activity android:name="org.apache.cordova.camera.CordovaCameraActivity" android:screenOrientation="potrait" android:theme="@style/CameraPluginAppTheme"/>
+          <activity android:name="org.apache.cordova.camera.CordovaCameraActivity" android:screenOrientation="portrait" android:theme="@style/CameraPluginAppTheme"/>
           <activity android:name="org.apache.cordova.camera.PreviewActivity" android:theme="@style/CameraPluginAppTheme"/>
         </config-file>
         <source-file src="src/android/xml/provider_paths.xml" target-dir="res/xml" />
