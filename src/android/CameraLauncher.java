@@ -48,6 +48,7 @@ import android.support.v4.content.FileProvider;
 import android.util.Base64;
 import android.util.Log;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.cordova.BuildHelper;
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaPlugin;
@@ -775,7 +776,9 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
 
                 assert cacheFile != null;
                 try {
-                    cacheFile.renameTo(file);
+
+                    FileUtils.copyFile(cacheFile, file);
+//                    cacheFile.renameTo(file); // not working
                     Uri galleryUri = addVideo(file);
                     JSONObject res = new JSONObject();
                     res.put("image", file);

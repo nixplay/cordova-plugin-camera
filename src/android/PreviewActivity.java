@@ -29,7 +29,11 @@ public class PreviewActivity extends AppCompatActivity {
     ImageView imageView;
 
     VideoView videoView;
+    ImageView playButton;
+
     private int requestCode;
+
+    File video;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -42,6 +46,38 @@ public class PreviewActivity extends AppCompatActivity {
         imageView = (ImageView) findViewById(resources.getIdentifier("image", "id", package_name));
 
         videoView = (VideoView) findViewById(resources.getIdentifier("video", "id", package_name));
+//        playButton = (ImageView) findViewById(resources.getIdentifier("iv_play", "id", package_name));
+//        playButton.setVisibility(View.INVISIBLE);
+//
+//        playButton.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                playButton.setVisibility(View.INVISIBLE);
+//                videoView.setVideoURI(Uri.parse(video.getAbsolutePath()));
+//                MediaController mediaController = new MediaController(PreviewActivity.this);
+//                mediaController.setVisibility(View.GONE);
+//                videoView.setMediaController(mediaController);
+//                videoView.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+//                    @Override
+//                    public void onPrepared(MediaPlayer mp) {
+//                        mp.setLooping(true);
+//                        mp.start();
+
+//                        float multiplier = (float) videoView.getWidth() / (float) mp.getVideoWidth();
+//                        videoView.setLayoutParams(new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (int) (mp.getVideoHeight() * multiplier)));
+//                    }
+//                });
+//                videoView.start();
+//            }
+//        });
+
+//        videoView.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+//            @Override
+//            public void onCompletion(MediaPlayer mp) {
+//                videoView.stopPlayback();
+//                playButton.setVisibility(View.VISIBLE);
+//            }
+//        });
 
         setupToolbar();
         requestCode = ((Integer)getIntent().getExtras().get("requestCode"));
@@ -81,8 +117,9 @@ public class PreviewActivity extends AppCompatActivity {
 
         }
         else if (requestCode == VIDEO_REQUEST) {
-            File video = ResultHolder.getVideo();
-            if(video.exists()) {
+            video = ResultHolder.getVideo();
+            if(video != null && video.exists()) {
+//                playButton.setVisibility(View.VISIBLE);
                 videoView.setVisibility(View.VISIBLE);
                 videoView.setVideoURI(Uri.parse(video.getAbsolutePath()));
                 MediaController mediaController = new MediaController(this);

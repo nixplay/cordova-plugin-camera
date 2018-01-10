@@ -2,6 +2,7 @@ package org.apache.cordova.camera;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
+import android.animation.ObjectAnimator;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -18,9 +19,11 @@ import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.animation.LinearInterpolator;
 import android.view.animation.OvershootInterpolator;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 
 import com.otaliastudios.cameraview.CameraListener;
 import com.otaliastudios.cameraview.CameraOptions;
@@ -33,14 +36,16 @@ import com.otaliastudios.cameraview.SessionType;
 import java.io.File;
 import java.lang.reflect.Field;
 
+import at.markushi.ui.CircleButton;
+
 
 public class CameraControls extends LinearLayout {
     public static final int IMAGE_REQUEST = 0x112;
     public static final int VIDEO_REQUEST = 0x111;
     private final Context mContext;
-    private final ImageView captureButton;
+    private final CircleButton captureButton;
     private final LinearLayoutManager linearLayoutManager;
-    private final ImageView videoButton;
+//    private final CircleButton videoButton;
 
     private int cameraViewId = -1;
     private CameraView cameraView;
@@ -53,6 +58,9 @@ public class CameraControls extends LinearLayout {
 
 
     ImageView flashButton;
+
+    ProgressBar progressBar;
+    Animator animator;
 
     private long captureDownTime;
     private long captureStartTime;
@@ -92,7 +100,7 @@ public class CameraControls extends LinearLayout {
         RecyclerView recyclerView = (RecyclerView) findViewById(resources.getIdentifier("recycleview","id", package_name));
         linearLayoutManager = new LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false);
 
-        captureButton = (ImageView) view.findViewById(resources.getIdentifier("captureButton", "id", package_name));
+        captureButton = (CircleButton) view.findViewById(resources.getIdentifier("captureButton", "id", package_name));
         captureButton.setOnTouchListener(new OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
@@ -100,13 +108,13 @@ public class CameraControls extends LinearLayout {
             }
         });
 
-        videoButton = (ImageView) view.findViewById(resources.getIdentifier("videoButton", "id", package_name));
-        videoButton.setOnTouchListener(new OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                return onTouchVideo(v,event);
-            }
-        });
+//        videoButton = (CircleButton) view.findViewById(resources.getIdentifier("videoButton", "id", package_name));
+//        videoButton.setOnTouchListener(new OnTouchListener() {
+//            @Override
+//            public boolean onTouch(View v, MotionEvent event) {
+//                return onTouchVideo(v,event);
+//            }
+//        });
 
         facingButton = (ImageView) view.findViewById(resources.getIdentifier("facingButton", "id", package_name));
         facingButton.setOnTouchListener(new OnTouchListener() {
@@ -122,7 +130,24 @@ public class CameraControls extends LinearLayout {
                 return onTouchFlash(v,event);
             }
         });
+
+        progressBar = (ProgressBar) view.findViewById(resources.getIdentifier("progressBar", "id", package_name));
     }
+
+    private void startProgressBar() {
+        animator = ObjectAnimator.ofInt(progressBar, "progress", 0, 500);
+        animator.setInterpolator(new LinearInterpolator());
+        animator.setDuration(15000);
+        animator.start();
+    }
+
+    private void endProgressBar() {
+        if (animator != null)
+            animator.cancel();
+        progressBar.clearAnimation();
+        progressBar.setProgress(0);
+    }
+
     /*********************************************************************************
      *   Returns the resource-IDs for all attributes specified in the
      *   given <declare-styleable>-resource tag as an int array.
@@ -266,6 +291,7 @@ public class CameraControls extends LinearLayout {
 
         if (video != null && video.exists()) {
             ResultHolder.dispose();
+            videoFile = video;
             ResultHolder.setVideo(videoFile);
             ResultHolder.setNativeCaptureSize(cameraView.getPreviewSize());
             Intent intent = new Intent(getContext(), PreviewActivity.class);
@@ -334,41 +360,41 @@ public class CameraControls extends LinearLayout {
         switch (motionEvent.getAction()) {
             case MotionEvent.ACTION_DOWN: {
                 captureDownTime = System.currentTimeMillis();
-//                pendingVideoCapture = true;
-//                postDelayed(new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        if (pendingVideoCapture) {
-//                            capturingVideo = true;
-//
-//
+                pendingVideoCapture = true;
+                cameraView.setSessionType(SessionType.VIDEO);
+                postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (pendingVideoCapture) {
+                            startProgressBar();
+                            capturingVideo = true;
 //                            videoFile  = getAlbumStorageDir();
-//                            cameraView.setSessionType(SessionType.VIDEO);
-//                            cameraView.startCapturingVideo(videoFile);
+                            cameraView.startCapturingVideo(null, 15000);
 //
-//                        }
-//                    }
-//                }, 250);
+                        }
+                    }
+                }, 1500);
                 break;
             }
 
             case MotionEvent.ACTION_UP: {
-//                pendingVideoCapture = false;
+                pendingVideoCapture = false;
+                endProgressBar();
 
-//                if (capturingVideo) {
-//                    capturingVideo = false;
-//                    cameraView.stopCapturingVideo();
-//                    cameraView.setSessionType(SessionType.PICTURE);
-//                } else {
+                if (capturingVideo) {
+                    capturingVideo = false;
+                    cameraView.stopCapturingVideo();
+                    cameraView.setSessionType(SessionType.PICTURE);
+                } else {
                     cameraView.setSessionType(SessionType.PICTURE);
                     captureStartTime = System.currentTimeMillis();
-                postDelayed(new Runnable() {
-                                @Override
-                                public void run() {
-                                    cameraView.capturePicture();
-                                }
-                            },250);
-//                }
+                    postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            cameraView.capturePicture();
+                        }
+                    },250);
+                }
                 break;
             }
         }
