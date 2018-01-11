@@ -43,6 +43,14 @@ public class CordovaCameraActivity extends AppCompatActivity {
     }
 
     @Override
+    public void onBackPressed() {
+        ResultHolder.dispose();
+        setResult(RESULT_CANCELED, new Intent());
+        finishActivity(CAMERA);
+        finish();
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
     }
@@ -71,7 +79,7 @@ public class CordovaCameraActivity extends AppCompatActivity {
             finishActivity(CAMERA);
             finish();
         } else  if (resultCode == RESULT_CANCELED) {
-
+            ResultHolder.dispose();
         }
     }
 }
