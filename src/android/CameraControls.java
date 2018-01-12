@@ -85,7 +85,6 @@ public class CameraControls extends LinearLayout {
 
         View view = LayoutInflater.from(getContext()).inflate(resources.getIdentifier("camera_controls", "layout", package_name), this);
 
-
         if (attrs != null) {
             TypedArray a = resources.obtainAttributes(attrs, getResourceDeclareStyleableIntArray(context,"CameraControls"));
             try {
@@ -132,6 +131,7 @@ public class CameraControls extends LinearLayout {
         });
 
         progressBar = (ProgressBar) view.findViewById(resources.getIdentifier("progressBar", "id", package_name));
+        endProgressBar();
     }
 
     private void startProgressBar() {
@@ -144,6 +144,7 @@ public class CameraControls extends LinearLayout {
     private void endProgressBar() {
         if (animator != null)
             animator.cancel();
+
         progressBar.clearAnimation();
         progressBar.setProgress(0);
     }
@@ -272,7 +273,7 @@ public class CameraControls extends LinearLayout {
     public void imageCaptured(byte[] b) {
 
         final long callbackTime = System.currentTimeMillis();
-        CameraUtils.decodeBitmap(b, 1000, 1000, new CameraUtils.BitmapCallback() {
+            CameraUtils.decodeBitmap(b, 5000, 5000, new CameraUtils.BitmapCallback() {
             @Override
             public void onBitmapReady(Bitmap bitmap) {
                 ResultHolder.dispose();
@@ -357,15 +358,16 @@ public class CameraControls extends LinearLayout {
     }
     boolean onTouchCapture(View view, MotionEvent motionEvent) {
         handleViewTouchFeedback(view, motionEvent);
+
         switch (motionEvent.getAction()) {
             case MotionEvent.ACTION_DOWN: {
                 captureDownTime = System.currentTimeMillis();
                 pendingVideoCapture = true;
-                cameraView.setSessionType(SessionType.VIDEO);
                 postDelayed(new Runnable() {
                     @Override
                     public void run() {
                         if (pendingVideoCapture) {
+                            cameraView.setSessionType(SessionType.VIDEO);
                             startProgressBar();
                             capturingVideo = true;
 //                            videoFile  = getAlbumStorageDir();
@@ -373,21 +375,20 @@ public class CameraControls extends LinearLayout {
 //
                         }
                     }
-                }, 1500);
+                }, 500);
                 break;
             }
 
             case MotionEvent.ACTION_UP: {
                 pendingVideoCapture = false;
                 endProgressBar();
-
                 if (capturingVideo) {
                     capturingVideo = false;
                     cameraView.stopCapturingVideo();
-                    cameraView.setSessionType(SessionType.PICTURE);
                 } else {
                     cameraView.setSessionType(SessionType.PICTURE);
                     captureStartTime = System.currentTimeMillis();
+
                     postDelayed(new Runnable() {
                         @Override
                         public void run() {

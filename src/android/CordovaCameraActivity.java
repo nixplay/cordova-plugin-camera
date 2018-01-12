@@ -8,6 +8,7 @@ import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 
 import com.otaliastudios.cameraview.CameraView;
+import com.otaliastudios.cameraview.VideoQuality;
 
 
 public class CordovaCameraActivity extends AppCompatActivity {
@@ -28,6 +29,8 @@ public class CordovaCameraActivity extends AppCompatActivity {
         cameraView = (CameraView) findViewById(resources.getIdentifier("camera", "id", package_name));
         cameraControl = (CameraControls) findViewById(resources.getIdentifier("camera_control", "id", package_name));
 
+        cameraView.setJpegQuality(1);
+        cameraView.setVideoQuality(VideoQuality.MAX_1080P);
 
     }
     @Override

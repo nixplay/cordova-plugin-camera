@@ -12,10 +12,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.text.Html;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.MediaController;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.VideoView;
 
@@ -82,7 +80,7 @@ public class PreviewActivity extends AppCompatActivity {
         setupToolbar();
         requestCode = ((Integer)getIntent().getExtras().get("requestCode"));
 
-        Button buttonConfirm = (Button) findViewById(resources.getIdentifier("buttonConfirm", "id", package_name));
+        TextView buttonConfirm = (TextView) findViewById(resources.getIdentifier("buttonConfirm", "id", package_name));
         buttonConfirm.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -94,7 +92,7 @@ public class PreviewActivity extends AppCompatActivity {
                 finish();
             }
         });
-        Button buttonRetake = (Button) findViewById(resources.getIdentifier("buttonRetake", "id", package_name));
+        TextView buttonRetake = (TextView) findViewById(resources.getIdentifier("buttonRetake", "id", package_name));
         buttonRetake.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -112,7 +110,6 @@ public class PreviewActivity extends AppCompatActivity {
         if (requestCode == IMAGE_REQUEST) {
             Bitmap bitmap = ResultHolder.getImage();
             imageView.setVisibility(View.VISIBLE);
-
             imageView.setImageBitmap(bitmap);
 
         }
@@ -131,8 +128,8 @@ public class PreviewActivity extends AppCompatActivity {
                         mp.setLooping(true);
                         mp.start();
 
-                        float multiplier = (float) videoView.getWidth() / (float) mp.getVideoWidth();
-                        videoView.setLayoutParams(new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (int) (mp.getVideoHeight() * multiplier)));
+//                        float multiplier = (float) videoView.getWidth() / (float) mp.getVideoWidth();
+//                        videoView.setLayoutParams(new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (int) (mp.getVideoHeight() * multiplier)));
                     }
                 });
                 videoView.start();

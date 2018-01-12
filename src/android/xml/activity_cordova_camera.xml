@@ -34,9 +34,7 @@
 				app:cameraGesturePinch="zoom"
 				app:cameraGestureScrollHorizontal="exposureCorrection"
 				app:cameraGestureScrollVertical="none"
-				app:cameraJpegQuality="100"
 				app:cameraSessionType="picture"
-				app:cameraVideoQuality="max1080p"
 				/>
 
 		</FrameLayout>
