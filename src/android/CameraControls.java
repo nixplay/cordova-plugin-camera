@@ -16,6 +16,7 @@ import android.support.annotation.Nullable;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -24,6 +25,7 @@ import android.view.animation.OvershootInterpolator;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.Toast;
 
 import com.otaliastudios.cameraview.CameraListener;
 import com.otaliastudios.cameraview.CameraOptions;
@@ -68,6 +70,8 @@ public class CameraControls extends LinearLayout {
     private boolean capturingVideo;
 
     private File videoFile;
+    boolean skipVideoCapture;
+    byte[] imageTaken;
 
     public CameraControls(Context context) {
         this(context, null);
@@ -231,13 +235,25 @@ public class CameraControls extends LinearLayout {
                     @Override
                     public void onPictureTaken(byte[] jpeg) {
                         super.onPictureTaken(jpeg);
+                        imageTaken = jpeg;
                         imageCaptured(jpeg);
                     }
 
                     @Override
                     public void onVideoTaken(File video) {
                         super.onVideoTaken(video);
-                        videoCaptured(video);
+                        Log.d("CameraControls", "skipVideoCapture: " + skipVideoCapture);
+                        if (!skipVideoCapture)
+                            videoCaptured(video);
+                        else {
+                            cameraView.setSessionType(SessionType.PICTURE);
+                            postDelayed(new Runnable() {
+                                @Override
+                                public void run() {
+                                    cameraView.capturePicture();
+                                }
+                            },250);
+                        }
                     }
                 });
                 setFacingImageBasedOnCamera();
@@ -358,15 +374,17 @@ public class CameraControls extends LinearLayout {
     }
     boolean onTouchCapture(View view, MotionEvent motionEvent) {
         handleViewTouchFeedback(view, motionEvent);
+        skipVideoCapture = false;
 
         switch (motionEvent.getAction()) {
             case MotionEvent.ACTION_DOWN: {
-                captureDownTime = System.currentTimeMillis();
                 pendingVideoCapture = true;
+
                 postDelayed(new Runnable() {
                     @Override
                     public void run() {
                         if (pendingVideoCapture) {
+                            captureDownTime = System.currentTimeMillis();
                             cameraView.setSessionType(SessionType.VIDEO);
                             startProgressBar();
                             capturingVideo = true;
@@ -382,20 +400,49 @@ public class CameraControls extends LinearLayout {
             case MotionEvent.ACTION_UP: {
                 pendingVideoCapture = false;
                 endProgressBar();
-                if (capturingVideo) {
-                    capturingVideo = false;
-                    cameraView.stopCapturingVideo();
-                } else {
-                    cameraView.setSessionType(SessionType.PICTURE);
-                    captureStartTime = System.currentTimeMillis();
+                captureStartTime = System.currentTimeMillis();
 
-                    postDelayed(new Runnable() {
-                        @Override
-                        public void run() {
-                            cameraView.capturePicture();
-                        }
-                    },250);
+                long totalTimeInMillis = captureStartTime - captureDownTime;
+                if (totalTimeInMillis > 1600 && captureDownTime != -1L) {
+                    // Toast.makeText(getContext(), "More than 1500 press and hold", Toast.LENGTH_SHORT).show();
+                    if (capturingVideo) {
+                        capturingVideo = false;
+                        cameraView.stopCapturingVideo();
+                    }
+                } else {
+
+                    if (capturingVideo) {
+                        capturingVideo = false;
+                        skipVideoCapture = true;
+                        cameraView.stopCapturingVideo();
+                    } else {
+
+                        cameraView.setSessionType(SessionType.PICTURE);
+
+                        postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                cameraView.capturePicture();
+                            }
+                        }, 250);
+                    }
+
                 }
+
+                captureDownTime = -1L;
+//                if (capturingVideo) {
+//                    capturingVideo = false;
+//                    cameraView.stopCapturingVideo();
+//                } else {
+//                    cameraView.setSessionType(SessionType.PICTURE);
+//
+//                    postDelayed(new Runnable() {
+//                        @Override
+//                        public void run() {
+//                            cameraView.capturePicture();
+//                        }
+//                    },250);
+//                }
                 break;
             }
         }
