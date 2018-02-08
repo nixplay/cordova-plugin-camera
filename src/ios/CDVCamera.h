@@ -58,7 +58,7 @@ typedef NSUInteger CDVMediaType;
 @property (assign) BOOL popoverSupported;
 @property (assign) BOOL usesGeolocation;
 @property (assign) BOOL cropToSize;
-
+@property (assign) NSTimeInterval videoMaximumDuration;
 + (instancetype) createFromTakePictureArguments:(CDVInvokedUrlCommand*)command;
 
 @end
