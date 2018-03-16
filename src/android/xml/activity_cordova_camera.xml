@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:id="@+id/activityMain"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent">
+
+	<FrameLayout
+		android:id="@+id/contentFrame"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent">
+
+		<FrameLayout
+			android:layout_width="match_parent"
+			android:layout_height="match_parent"
+			android:visibility="visible">
+
+			<com.otaliastudios.cameraview.CameraView
+				xmlns:app="http://schemas.android.com/apk/res-auto"
+				android:id="@+id/camera"
+				android:layout_width="match_parent"
+				android:layout_height="match_parent"
+				android:adjustViewBounds="true"
+				android:visibility="visible"
+				android:keepScreenOn="true"
+				app:cameraPlaySounds="true"
+				app:cameraGrid="off"
+				app:cameraCropOutput="false"
+				app:cameraFacing="back"
+				app:cameraFlash="off"
+				app:cameraAudio="on"
+				app:cameraGestureTap="focusWithMarker"
+				app:cameraGestureLongTap="none"
+				app:cameraGesturePinch="zoom"
+				app:cameraGestureScrollHorizontal="exposureCorrection"
+				app:cameraGestureScrollVertical="none"
+				app:cameraSessionType="picture"
+				/>
+
+		</FrameLayout>
+
+		<View
+			android:id="@+id/blackCover"
+			android:layout_width="match_parent"
+			android:layout_height="match_parent"
+			android:background="@android:color/black"
+			android:visibility="gone"/>
+
+		<org.apache.cordova.camera.CameraControls
+			xmlns:app="http://schemas.android.com/apk/res-auto"
+			android:id="@+id/camera_control"
+			android:layout_width="match_parent"
+			android:layout_height="156dp"
+			android:layout_gravity="bottom"
+			android:background="@android:color/transparent"
+			android:elevation="7dp"
+			app:camera="@+id/camera"
+			app:cover="@+id/blackCover">
+
+		</org.apache.cordova.camera.CameraControls>
+
+	</FrameLayout>
+
+</android.support.constraint.ConstraintLayout>
