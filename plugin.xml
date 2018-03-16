@@ -59,6 +59,7 @@
 
     <!-- android -->
     <platform name="android">
+    	<framework src="src/android/build.gradle" custom="true" type="gradleReference" />
         <config-file target="res/xml/config.xml" parent="/*">
             <feature name="Camera">
                 <param name="android-package" value="org.apache.cordova.camera.CameraLauncher"/>
@@ -67,12 +68,17 @@
                 <param name="android-package" value="org.apache.cordova.geolocation.Geolocation" />
             </feature>
         </config-file>
+
         <config-file target="AndroidManifest.xml" parent="/*">
-            <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+            <uses-permission android:name="android.permission.MEDIA_CONTENT_CONTROL"/>
+		    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+		    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
             <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
             <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
             <uses-feature android:name="android.hardware.location.gps" />
             <uses-permission android:name="android.permission.MANAGE_DOCUMENTS" />
+            <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    		<uses-permission android:name="android.permission.CAPTURE_VIDEO_OUTPUT" />
         </config-file>
         <config-file target="AndroidManifest.xml" parent="application">
           <provider
@@ -84,12 +90,61 @@
                   android:name="android.support.FILE_PROVIDER_PATHS"
                   android:resource="@xml/provider_paths"/>
           </provider>
+          <activity android:name="org.apache.cordova.camera.CordovaCameraActivity" android:screenOrientation="portrait" android:theme="@style/CameraPluginAppTheme"/>
+          <activity android:name="org.apache.cordova.camera.PreviewActivity" android:screenOrientation="portrait" android:theme="@style/CameraPluginAppTheme"/>
         </config-file>
+        <source-file src="src/android/xml/provider_paths.xml" target-dir="res/xml" />
         <source-file src="src/android/CameraLauncher.java" target-dir="src/org/apache/cordova/camera" />
         <source-file src="src/android/CordovaUri.java" target-dir="src/org/apache/cordova/camera" />
         <source-file src="src/android/FileHelper.java" target-dir="src/org/apache/cordova/camera" />
         <source-file src="src/android/ExifHelper.java" target-dir="src/org/apache/cordova/camera" />
-        <source-file src="src/android/xml/provider_paths.xml" target-dir="res/xml" />
+        <!--Camera Kit-->
+        <source-file src="src/android/CordovaCameraActivity.java" target-dir="src/org/apache/cordova/camera" />
+        <source-file src="src/android/CameraControls.java" target-dir="src/org/apache/cordova/camera" />
+        <source-file src="src/android/ResultHolder.java" target-dir="src/org/apache/cordova/camera" />
+        <source-file src="src/android/CameraHelper.java" target-dir="src/org/apache/cordova/camera" />
+        <source-file src="src/android/PreviewActivity.java" target-dir="src/org/apache/cordova/camera" />
+
+        <source-file src="src/android/xml/activity_preview.xml" target-dir="res/layout" />
+		<source-file src="src/android/xml/camera_controls.xml" target-dir="res/layout" />
+		<source-file src="src/android/xml/activity_cordova_camera.xml" target-dir="res/layout" />
+		<source-file src="src/android/xml/action_bar.xml" target-dir="res/layout" />
+		<source-file src="src/android/xml/capture_button.xml" target-dir="res/drawable" />
+        <source-file src="src/android/xml/ic_facing_back.xml" target-dir="res/drawable" />
+        <source-file src="src/android/xml/ic_flash_auto.xml" target-dir="res/drawable" />
+        <source-file src="src/android/xml/ic_flash_on.xml" target-dir="res/drawable" />
+        <source-file src="src/android/xml/ic_switch.xml" target-dir="res/drawable" />
+        <source-file src="src/android/xml/ic_facing_front.xml" target-dir="res/drawable" />
+        <source-file src="src/android/xml/ic_flash_off.xml" target-dir="res/drawable" />
+        <source-file src="src/android/xml/ic_photo.xml" target-dir="res/drawable" />
+        <source-file src="src/android/xml/ic_video.xml" target-dir="res/drawable" />
+        <source-file src="src/android/xml/logomark.xml" target-dir="res/drawable" />
+        <source-file src="src/android/xml/circular.xml" target-dir="res/drawable" />
+        <source-file src="src/android/xml/oval_button.xml" target-dir="res/drawable" />
+        <source-file src="src/android/xml/attr.xml" target-dir="res/values" />
+        <!-- <config-file target="res/values/attr.xml" parent="/resources">
+        	<declare-styleable name="CameraControls">
+		        <attr name="camera" format="reference" />
+		        <attr name="cover" format="reference" />
+		    </declare-styleable>
+        </config-file> -->
+        <config-file target="res/values/styles.xml" parent="/resources">
+        	<style name="CameraPluginAppTheme" parent="Theme.AppCompat.Light.NoActionBar">
+			    <item name="colorPrimary">@color/colorPrimary</item>
+			    <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+			    <item name="colorAccent">@color/colorAccent</item>
+			</style>
+            <style name="buttonTextView">
+                <item name="android:textColor">@android:color/black</item>
+                <item name="android:gravity">center</item>
+                <item name="android:textSize">14sp</item>
+            </style>
+        </config-file>
+
+        <resource-file src="src/android/drawable-hdpi/left_arrow.png" target="res/drawable-hdpi/left_arrow.png" />
+        <resource-file src="src/android/drawable-hdpi/right_arrow.png" target="res/drawable-hdpi/right_arrow.png" />
+
+        <!--Camera Kit-->
         <js-module src="www/CameraPopoverHandle.js" name="CameraPopoverHandle">
             <clobbers target="CameraPopoverHandle" />
         </js-module>

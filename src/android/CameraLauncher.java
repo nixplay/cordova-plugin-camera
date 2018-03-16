@@ -36,6 +36,7 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.media.ExifInterface;
+import android.media.MediaMetadataRetriever;
 import android.media.MediaScannerConnection;
 import android.media.MediaScannerConnection.MediaScannerConnectionClient;
 import android.net.Uri;
@@ -48,6 +49,7 @@ import android.support.v4.content.FileProvider;
 import android.util.Base64;
 import android.util.Log;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.cordova.BuildHelper;
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaPlugin;
@@ -70,6 +72,9 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
+
+import static org.apache.cordova.camera.CameraHelper.MEDIA_TYPE_IMAGE;
+import static org.apache.cordova.camera.CameraHelper.MEDIA_TYPE_VIDEO;
 
 /**
  * This class launches the camera view, allows the user to take a picture, closes the camera view,
@@ -309,7 +314,8 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
         this.numPics = queryImgDB(whichContentStore()).getCount();
 
         // Let's use the intent and see what happens
-        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+//        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        Intent intent = new Intent(cordova.getActivity(), CordovaCameraActivity.class);
 
         // Specify file so that large image is captured and returned
         File photo = createCaptureFile(encodingType);
@@ -325,7 +331,8 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
             PackageManager mPm = this.cordova.getActivity().getPackageManager();
             if (intent.resolveActivity(mPm) != null) {
 
-                this.cordova.startActivityForResult((CordovaPlugin) this, intent, (CAMERA + 1) * 16 + returnType + 1);
+//                this.cordova.startActivityForResult((CordovaPlugin) this, intent, (CAMERA + 1) * 16 + returnType + 1);
+                this.cordova.startActivityForResult(this, intent, (CAMERA + 1) * 16 + returnType + 1);
             } else {
                 Log.d(LOG_TAG, "Error: You don't have a default camera.  Your device may not be CTS complaint.");
             }
@@ -521,17 +528,17 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
                 locationManager.removeUpdates(this);
                 processBitmapResult(CameraLauncher.this.destType, intentBitmap);
 
-            }else if (!isGPSEnabled && !isNetworkEnabled){
+            } else if (!isGPSEnabled && !isNetworkEnabled) {
                 locationManager.removeUpdates(this);
                 processBitmapResult(CameraLauncher.this.destType, intentBitmap);
-            }else{
-                final Handler handler = new Handler ();
-                if(timer == null)timer = new Timer();
-                timer.scheduleAtFixedRate (new TimerTask(){
-                    public void run (){
-                        handler.post (new Runnable (){
-                            public void run (){
-                                if(timer != null) {
+            } else {
+                final Handler handler = new Handler();
+                if (timer == null) timer = new Timer();
+                timer.scheduleAtFixedRate(new TimerTask() {
+                    public void run() {
+                        handler.post(new Runnable() {
+                            public void run() {
+                                if (timer != null) {
                                     timer.cancel();
                                 }
                                 locationManager.removeUpdates(CameraLauncher.this);
@@ -553,18 +560,23 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
 
     }
 
-    private String getPicturesPath() {
+    private String getPicturesPath(int mediaType) {
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        String imageFileName = "IMG_" + timeStamp + (this.encodingType == JPEG ? ".jpg" : ".png");
+
+        String imageFileName = "";
+        if (mediaType == MEDIA_TYPE_IMAGE) {
+            imageFileName = "IMG_" + timeStamp + (this.encodingType == JPEG ? ".jpg" : ".png");
+        } else if (mediaType == MEDIA_TYPE_VIDEO) {
+            imageFileName = "VID_" + timeStamp + ".mp4";
+        }
         File storageDir = Environment.getExternalStoragePublicDirectory(
                 Environment.DIRECTORY_DCIM);
-        String galleryPath = storageDir.getAbsolutePath() + "/" + imageFileName;
-        return galleryPath;
+        return storageDir.getAbsolutePath() + "/" + imageFileName;
     }
 
-    private void refreshGallery(Uri contentUri) {
+    private void refreshGallery(Uri _contentUri) {
         Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
-        mediaScanIntent.setData(contentUri);
+        mediaScanIntent.setData(_contentUri);
         this.cordova.getActivity().sendBroadcast(mediaScanIntent);
     }
 
@@ -724,6 +736,63 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
     public void onActivityResult(int requestCode, int resultCode, Intent intent) {
         // Get src and dest types from request code for a Camera Activity
         Log.d(LOG_TAG, "onActivityResult.");
+        if (ResultHolder.getImage() != null) {
+
+            Log.d("image:", ResultHolder.getImage().toString());
+            if (this.saveToPhotoAlbum) {
+                String sourcePath = (this.allowEdit && this.croppedUri != null) ?
+                        FileHelper.stripFileProtocol(this.croppedUri.toString()) :
+                        this.imageUri.getFilePath();
+
+                try {
+                    FileOutputStream out = null;
+                    try {
+                        out = new FileOutputStream(sourcePath);
+                        Bitmap imageBitmap = ResultHolder.getImage();
+                        imageBitmap.compress(Bitmap.CompressFormat.JPEG, 100, out); // bmp is your Bitmap instance
+                        // PNG is a lossless format, the compression factor (100) is ignored
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    } finally {
+                        try {
+                            if (out != null) {
+                                out.close();
+                            }
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
+        } else if (ResultHolder.getVideo() != null) {
+            Log.d("video:", ResultHolder.getVideo().toString());
+            if (this.saveToPhotoAlbum) {
+                File cacheFile = ResultHolder.getVideo();
+
+                File file = new File(getPicturesPath(MEDIA_TYPE_VIDEO));
+
+                assert cacheFile != null;
+                try {
+
+                    FileUtils.copyFile(cacheFile, file);
+//                    cacheFile.renameTo(file); // not working
+                    Uri galleryUri = addVideo(file);
+                    JSONObject res = new JSONObject();
+                    res.put("image", file);
+                    res.put("preSelectedAsset", galleryUri.toString());
+                    refreshGallery(galleryUri);
+
+                    this.callbackContext.success(res);
+                } catch (Exception ignored) {
+                    ignored.printStackTrace();
+                }
+            }
+            return;
+        }
+
         int srcType = (requestCode / 16) - 1;
         int destType = (requestCode % 16) - 1;
 
@@ -827,17 +896,18 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
         // in the gallery and the modified image is saved in the temporary
         // directory
         if (this.saveToPhotoAlbum) {
-            file = new File(getPicturesPath());
-            galleryUri = Uri.fromFile(file);
+            file = new File(getPicturesPath(MEDIA_TYPE_IMAGE));
+            Uri fileUri = Uri.fromFile(file);
 
             if (this.allowEdit && this.croppedUri != null) {
-                writeUncompressedImage(croppedUri, galleryUri);
+                writeUncompressedImage(croppedUri, fileUri);
             } else {
                 Uri imageUri = this.imageUri.getFileUri();
-                writeUncompressedImage(imageUri, galleryUri);
+                writeUncompressedImage(imageUri, fileUri);
             }
-            contentUri = MediaStore.Images.Media.insertImage(cordova.getActivity().getContentResolver(),
-                    file.getAbsolutePath(), file.getName(), file.getName());
+            galleryUri = addImage(file);
+            //content uri all the way
+            contentUri = galleryUri.toString();
 
             refreshGallery(galleryUri);
         }
@@ -888,11 +958,11 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
                     }
                     JSONObject res = new JSONObject();
                     try {
-                        if(saveToPhotoAlbum && contentUri != null) {
-                            res.put("image", file);
+                        if (saveToPhotoAlbum && contentUri != null) {
+                            res.put("image", file.toString());
                             res.put("preSelectedAsset", contentUri);
-                        }else {
-                            res.put("image", uri.toString());
+                        } else {
+                            res.put("image", file.toString());
                             res.put("preSelectedAsset", uri.toString().replaceAll("file://", ""));
                         }
                     } catch (JSONException e) {
@@ -940,12 +1010,12 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
 //                this.callbackContext.success(uri.toString());
                 JSONObject res = new JSONObject();
                 try {
-                    if(saveToPhotoAlbum && contentUri != null) {
-                        res.put("image", file);
+                    if (saveToPhotoAlbum && contentUri != null) {
+                        res.put("image", file.toString());
                         res.put("preSelectedAsset", contentUri);
-                    }else {
-                       res.put("image", uri.toString());
-                        res.put("preSelectedAsset", uri.toString().replaceAll("file://", ""));
+                    } else {
+                        res.put("image", file.toString());
+                        res.put("preSelectedAsset", contentUri);
                     }
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -959,6 +1029,31 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
 
         this.cleanup(FILE_URI, this.imageUri.getFileUri(), galleryUri, bitmap);
         bitmap = null;
+    }
+
+    public Uri addVideo(File videoFile) {
+        ContentValues values = new ContentValues(3);
+        String videoNname = videoFile.getAbsolutePath();
+        String videoTitle = videoNname.substring(videoNname.lastIndexOf("/")+1,videoNname.lastIndexOf("."));
+
+        values.put(MediaStore.Video.Media.TITLE, videoTitle);
+        values.put(MediaStore.Video.Media.MIME_TYPE, "video/mp4");
+        values.put(MediaStore.Video.Media.DATA, videoFile.getAbsolutePath());
+        MediaMetadataRetriever mediaMetadataRetriever = new MediaMetadataRetriever();
+        mediaMetadataRetriever.setDataSource(cordova.getActivity(), Uri.fromFile(videoFile));
+        long videoLengthInMs = Integer.parseInt(mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)) ;
+        values.put(MediaStore.Video.Media.DURATION, videoLengthInMs);
+        return cordova.getActivity().getContentResolver().insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values);
+    }
+    public Uri addImage(File imageFile) {
+        ContentValues values = new ContentValues(3);
+        String imageName = imageFile.getAbsolutePath();
+        String imageTitle = imageName.substring(imageName.lastIndexOf("/")+1,imageName.lastIndexOf("."));
+
+        values.put(MediaStore.Images.Media.TITLE, imageTitle);
+        values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
+        values.put(MediaStore.Images.Media.DATA, imageFile.getAbsolutePath());
+        return cordova.getActivity().getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
     }
 
     private int exifToDegrees(int exifOrientation) {
@@ -1021,8 +1116,8 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
      */
     private void writeUncompressedImage(Uri src, Uri dest) throws FileNotFoundException,
             IOException {
-        Log.d("writeUncompressedImage","src "+src.toString());
-        Log.d("writeUncompressedImage","dest "+dest.toString());
+        Log.d("writeUncompressedImage", "src " + src.toString());
+        Log.d("writeUncompressedImage", "dest " + dest.toString());
         FileInputStream fis = new FileInputStream(FileHelper.stripFileProtocol(src.toString()));
         writeUncompressedImage(fis, dest);
 
@@ -1437,7 +1532,7 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
 
                     try {
                         ///TODO cancel timeout callback
-                        if(timer != null) {
+                        if (timer != null) {
                             timer.cancel();
                         }
                         processBitmapResult(CameraLauncher.this.destType, intentBitmap);
@@ -1575,7 +1670,7 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
     }
 
     public void onLocationChanged(Location location) {
-        Log.d(LOG_TAG, "onLocationChanged. "+location.toString());
+        Log.d(LOG_TAG, "onLocationChanged. " + location.toString());
         // Called when a new location is found by the network location provider.
         CameraLauncher.this.location = location;
         // only update once per shot
@@ -1585,7 +1680,7 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
         }
         if (shouldUpdateLoction) {
             ///TODO cancel timeout callback
-            if(timer != null ) {
+            if (timer != null) {
                 timer.cancel();
             }
             try {
@@ -1600,15 +1695,15 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
     }
 
     public void onStatusChanged(String provider, int status, Bundle extras) {
-        Log.d("Location Update ", "onStatusChanged "+ provider +" status " +status);
+        Log.d("Location Update ", "onStatusChanged " + provider + " status " + status);
     }
 
     public void onProviderEnabled(String provider) {
-        Log.d("Location Update ", "onProviderEnabled "+ provider );
+        Log.d("Location Update ", "onProviderEnabled " + provider);
     }
 
     public void onProviderDisabled(String provider) {
-        Log.d("Location Update ", "onProviderEnabled "+ provider );
+        Log.d("Location Update ", "onProviderEnabled " + provider);
     }
 
     @Override
