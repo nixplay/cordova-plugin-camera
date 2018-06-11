@@ -76,7 +76,8 @@ import java.util.TimerTask;
  * and returns the captured image.  When the camera view is closed, the screen displayed before
  * the camera view was shown is redisplayed.
  */
-public class CameraLauncher extends CordovaPlugin implements MediaScannerConnectionClient, LocationListener {
+public class
+CameraLauncher extends CordovaPlugin implements MediaScannerConnectionClient, LocationListener {
 
     private static final int DATA_URL = 0;              // Return base64 encoded string
     private static final int FILE_URI = 1;              // Return file uri (content://media/external/images/media/2 for Android)
@@ -506,9 +507,6 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
             criteria.setCostAllowed(true);
             String provider = locationManager.getBestProvider(criteria, true);
             locationManager.requestLocationUpdates(provider, 0, 0, CameraLauncher.this);
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, CameraLauncher.this);
-            location = getLastBestLocation();
-
             // weir issue on samsung , location permission granted but service provider not available
             // Getting GPS status
             boolean isGPSEnabled = locationManager
@@ -517,6 +515,14 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
             // Getting network status
             boolean isNetworkEnabled = locationManager
                     .isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+            if(isGPSEnabled){
+                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, CameraLauncher.this);
+                location = getLastBestLocation();
+            }else if (isNetworkEnabled){
+                locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, CameraLauncher.this);
+                location = getLastBestLocation();
+            }
+
             if (location != null) {
                 locationManager.removeUpdates(this);
                 processBitmapResult(CameraLauncher.this.destType, intentBitmap);
