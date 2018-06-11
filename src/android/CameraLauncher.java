@@ -506,7 +506,7 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
             criteria.setCostAllowed(true);
             String provider = locationManager.getBestProvider(criteria, true);
             locationManager.requestLocationUpdates(provider, 0, 0, CameraLauncher.this);
-            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, CameraLauncher.this);
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, CameraLauncher.this);
             location = getLastBestLocation();
 
             // weir issue on samsung , location permission granted but service provider not available
