@@ -76,8 +76,7 @@ import java.util.TimerTask;
  * and returns the captured image.  When the camera view is closed, the screen displayed before
  * the camera view was shown is redisplayed.
  */
-public class
-CameraLauncher extends CordovaPlugin implements MediaScannerConnectionClient, LocationListener {
+public class CameraLauncher extends CordovaPlugin implements MediaScannerConnectionClient, LocationListener {
 
     private static final int DATA_URL = 0;              // Return base64 encoded string
     private static final int FILE_URI = 1;              // Return file uri (content://media/external/images/media/2 for Android)
@@ -120,9 +119,8 @@ CameraLauncher extends CordovaPlugin implements MediaScannerConnectionClient, Lo
     private boolean correctOrientation;     // Should the pictures orientation be corrected
     private boolean orientationCorrected;   // Has the picture's orientation been corrected
     private boolean allowEdit;              // Should we allow the user to crop the image.
-    protected final static String[] permissions = {Manifest.permission.CAMERA,
-            Manifest.permission.READ_EXTERNAL_STORAGE,
-            Manifest.permission.WRITE_EXTERNAL_STORAGE};
+
+    protected final static String[] permissions = {Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.CAMERA, Manifest.permission.READ_EXTERNAL_STORAGE};
 
     public CallbackContext callbackContext;
     private int numPics;
@@ -259,10 +257,9 @@ CameraLauncher extends CordovaPlugin implements MediaScannerConnectionClient, Lo
      */
     public void callTakePicture(int returnType, int encodingType) {
         Log.d(LOG_TAG, "callTakePicture.");
-        boolean saveAlbumPermission = PermissionHelper.hasPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
+        boolean saveAlbumPermission = PermissionHelper.hasPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
+                && PermissionHelper.hasPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
         boolean takePicturePermission = PermissionHelper.hasPermission(this, Manifest.permission.CAMERA);
-        boolean writeStoragePermission = PermissionHelper.hasPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
-
 
         // CB-10120: The CAMERA permission does not need to be requested unless it is declared
         // in AndroidManifest.xml. This plugin does not declare it, but others may and so we must
@@ -287,16 +284,13 @@ CameraLauncher extends CordovaPlugin implements MediaScannerConnectionClient, Lo
             }
         }
 
-        if (takePicturePermission && saveAlbumPermission && writeStoragePermission ) {
+        if (takePicturePermission && saveAlbumPermission) {
             takePicture(returnType, encodingType);
-        } else if (saveAlbumPermission && !takePicturePermission && writeStoragePermission ) {
+        } else if (saveAlbumPermission && !takePicturePermission) {
             PermissionHelper.requestPermission(this, TAKE_PIC_SEC, Manifest.permission.CAMERA);
-        } else if (!saveAlbumPermission && takePicturePermission && !writeStoragePermission ) {
-            String[] storage_permissions = {
-                    Manifest.permission.READ_EXTERNAL_STORAGE,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE};
-
-            PermissionHelper.requestPermissions(this, TAKE_PIC_SEC, storage_permissions);
+        } else if (!saveAlbumPermission && takePicturePermission) {
+            String[] PERMISSION = {Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE};
+            PermissionHelper.requestPermissions(this, TAKE_PIC_SEC, PERMISSION);
         } else {
             PermissionHelper.requestPermissions(this, TAKE_PIC_SEC, permissions);
         }
@@ -507,6 +501,9 @@ CameraLauncher extends CordovaPlugin implements MediaScannerConnectionClient, Lo
             criteria.setCostAllowed(true);
             String provider = locationManager.getBestProvider(criteria, true);
             locationManager.requestLocationUpdates(provider, 0, 0, CameraLauncher.this);
+            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, CameraLauncher.this);
+            location = getLastBestLocation();
+
             // weir issue on samsung , location permission granted but service provider not available
             // Getting GPS status
             boolean isGPSEnabled = locationManager
@@ -515,14 +512,6 @@ CameraLauncher extends CordovaPlugin implements MediaScannerConnectionClient, Lo
             // Getting network status
             boolean isNetworkEnabled = locationManager
                     .isProviderEnabled(LocationManager.NETWORK_PROVIDER);
-            if(isGPSEnabled){
-                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, CameraLauncher.this);
-                location = getLastBestLocation();
-            }else if (isNetworkEnabled){
-                locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, CameraLauncher.this);
-                location = getLastBestLocation();
-            }
-
             if (location != null) {
                 locationManager.removeUpdates(this);
                 processBitmapResult(CameraLauncher.this.destType, intentBitmap);
